@@ -1,0 +1,307 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: django-skosxl\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-01-07 14:51+0000\n"
+"PO-Revision-Date: 2012-01-07 15:51+0100\n"
+"Last-Translator: Dominique Guardiola <dguardiola@quinode.fr>\n"
+"Language-Team: Quinode <dguardiola@quinode.fr>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"X-Poedit-Language: French\n"
+"X-Poedit-Country: FRANCE\n"
+
+#: admin.py:38
+#, python-format
+msgid "Make selected concept part of the \"%s\" scheme"
+msgstr "Rattacher les concepts sélectionnés au schéma \"%s\""
+
+#: admin.py:48
+msgid "Scheme"
+msgstr "Schéma"
+
+#: admin.py:49
+msgid "Meta-data"
+msgstr "Méta-données"
+
+#: admin.py:62
+msgid "Create concept(s) from selected label(s)"
+msgstr "Créer des concepts à partir des tags sélectionnés"
+
+#: models.py:20
+msgid "preferred"
+msgstr "préféré"
+
+#: models.py:21
+msgid "alternative"
+msgstr "alternatif"
+
+#: models.py:22
+msgid "hidden"
+msgstr "masqué"
+
+#: models.py:28
+msgid "has a broader concept"
+msgstr "a pour concept plus large"
+
+#: models.py:29
+msgid "has a narrower concept"
+msgstr "a comme concept plus précis"
+
+#: models.py:30
+msgid "has a related concept"
+msgstr "a une relation avec"
+
+#: models.py:42
+msgid "matches exactly"
+msgstr "correspond exactement à"
+
+#: models.py:43
+msgid "matches closely"
+msgstr "est assez proche de"
+
+#: models.py:44
+msgid "has a broader match"
+msgstr "a une signification plus large que"
+
+#: models.py:45
+msgid "has a narrower match"
+msgstr "a une signification plus précise que"
+
+#: models.py:46
+msgid "has a related match"
+msgstr "e une relation avec"
+
+#: models.py:51
+msgid "French"
+msgstr "Français"
+
+#: models.py:52
+msgid "English"
+msgstr "Anglais"
+
+#: models.py:53
+msgid "Spanish"
+msgstr "Espagnol"
+
+#: models.py:54
+msgid "Italian"
+msgstr "Italien"
+
+#: models.py:55
+msgid "Portuguese"
+msgstr "Portugais"
+
+#: models.py:61
+msgid "Active"
+msgstr "Actif"
+
+#: models.py:62
+msgid "Draft"
+msgstr "Brouillon"
+
+#: models.py:63
+msgid "Double"
+msgstr "Doublon"
+
+#: models.py:64
+msgid "Dispute"
+msgstr "Désaccord"
+
+#: models.py:65
+msgid "Not classified"
+msgstr "pas trié"
+
+#: models.py:71
+#: models.py:94
+msgid "preferred label"
+msgstr "libellé préféré"
+
+#: models.py:73
+#: models.py:91
+#: models.py:92
+#: models.py:125
+msgid "main URI"
+msgstr "URI"
+
+#: models.py:74
+#: models.py:85
+#: models.py:126
+msgid "created"
+msgstr "date de création"
+
+#: models.py:75
+#: models.py:86
+#: models.py:127
+msgid "modified"
+msgstr "date de modification"
+
+#: models.py:81
+msgid "definition"
+msgstr "définition"
+
+#: models.py:84
+msgid "change note"
+msgstr "historique"
+
+#: models.py:87
+msgid "review status"
+msgstr "évaluation"
+
+#: models.py:90
+#: models.py:123
+msgid "django user"
+msgstr "utilisateur Django"
+
+#: models.py:96
+msgid "is top concept"
+msgstr "concept de niveau 1"
+
+#: models.py:99
+msgid "semantic relations"
+msgstr "relations sémantiques"
+
+#: models.py:122
+msgid "language"
+msgstr "langue"
+
+#: models.py:124
+msgid "author URI"
+msgstr "URI auteur"
+
+#: models.py:128
+msgid "main concept"
+msgstr "concept"
+
+#: models.py:129
+#: models.py:154
+msgid "label type"
+msgstr "type de libellé"
+
+#: models.py:137
+msgid "Created from tag \""
+msgstr "Créé à partir du tag \""
+
+#: models.py:152
+msgid "label"
+msgstr "libellé"
+
+#: models.py:153
+msgid "concept"
+msgstr "concept"
+
+#: models.py:158
+msgid "Label property"
+msgstr "Propriété du libellé"
+
+#: models.py:159
+msgid "Label properties"
+msgstr "Propriétés de libellés"
+
+#: models.py:171
+msgid "There can be only one preferred label by language"
+msgstr "Il ne peut y avoir d'un seul libellé préféré par concept et par langue."
+
+#: models.py:190
+msgid "Origin"
+msgstr "Origine"
+
+#: models.py:191
+msgid "Target"
+msgstr "Cible"
+
+#: models.py:192
+msgid "Type of semantic relation"
+msgstr "Type de relation sémantique"
+
+#: models.py:196
+#: models.py:197
+msgid "Semantic relations"
+msgstr "Relations sémantiques"
+
+#: templates/admin_concept_change.html:19
+msgid "Home"
+msgstr "Accueil"
+
+#: templates/admin_concept_change.html:22
+msgid "Add"
+msgstr "Ajouter"
+
+#: templates/admin_concept_change.html:44
+msgid "History"
+msgstr "Historique"
+
+#: templates/admin_concept_change.html:45
+msgid "View on site"
+msgstr "Voir sur le site"
+
+#: templates/admin_concept_change.html:56
+msgid "Please correct the error below."
+msgid_plural "Please correct the errors below."
+msgstr[0] "Merci de corriger l'erreur suivante."
+msgstr[1] "Merci de corriger les erreurs suivantes."
+
+#~ msgid "Has a broader (transitive) concept"
+#~ msgstr "A pour concept plus large (transitif)"
+
+#~ msgid "Has a narrower (transitive) concept"
+#~ msgstr "A pour concept plus précis (transitif)"
+
+#~ msgid "< missing label >"
+#~ msgstr "< label manquant >"
+
+#~ msgid "Literal Form"
+#~ msgstr "Forme littérale"
+
+#~ msgid "Occurrences"
+#~ msgstr "Occurrences"
+
+#~ msgid "Term"
+#~ msgstr "Terme"
+
+#~ msgid "Terms"
+#~ msgstr "Termes"
+
+#~ msgid "Name"
+#~ msgstr "Nom"
+
+#~ msgid "URL"
+#~ msgstr "Adresse URL"
+
+#~ msgid "SKOS Thesaurus"
+#~ msgstr "Thesaurus SKOS"
+
+#~ msgid "SKOS Thesaurii"
+#~ msgstr "Thesaurii SKOS"
+
+#~ msgid "Type of label"
+#~ msgstr "Type de libellé"
+
+#~ msgid "Labels"
+#~ msgstr "Libellés"
+
+#~ msgid "Local concept to map"
+#~ msgstr "Concept local à relier"
+
+#~ msgid "Concept URI"
+#~ msgstr "URI du concept"
+
+#~ msgid "Type of mapping relation"
+#~ msgstr "Type de correspondance"
+
+#~ msgid "Mapping relation"
+#~ msgstr "Correspondance"
+
+#~ msgid "Mapping relations"
+#~ msgstr "Correspondances"
+
+#~ msgid "Preferred Label"
+#~ msgstr "Libellé préféré"

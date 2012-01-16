@@ -1,0 +1,27 @@
+# File types #
+##############
+*.pyc
+*.tmproj
+*.komodoproject
+#*.json
+*.db
+*.swp
+*.bak
+@@*
+
+# Directories #
+###############
+
+# Specific files #
+##################
+#/settings.py
+/base.db
+/activate_env.bat
+/deactivate_env.bat
+
+# OS generated files #
+######################
+.DS_Store
+Icon?
+Thumbs.db
+
