@@ -1,0 +1,26 @@
+/* @override http://localhost:8000/static/d3.tree.css */
+
+.gallery {
+	background-color: #f8fcff;
+	padding: 15px;
+}
+
+.node circle {
+  fill: #f9fccb;
+  stroke: #f19964;
+  stroke-width: 1.2px;
+  color: #f19964;
+  cursor: pointer;
+}
+
+.node {
+  font: 13px "PT Sans Narrow", "Trebuchet MS", Trebuchet, Tahoma, Arial;
+   cursor: pointer;
+
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}

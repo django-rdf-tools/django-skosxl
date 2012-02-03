@@ -68,7 +68,22 @@
     {% include inline_admin_formset.opts.template %}
 {% endfor %}
 
-{% block after_related_objects %}{% endblock %}
+{% block after_related_objects %}
+
+<div class="module">
+    <h2>Correspondances avec d'autres Thésaurus</h2>
+    <div class="form-row">
+    {% for list in lists %}
+        {{list.name}}<ul>
+        {% for item in list.items %}
+            <li><a href="{{item.uri.value}}" target="_blank">{{item.label.value}}</a></li>
+        {% endfor%}
+        </ul>
+    {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
 
 {% submit_row %}
 
@@ -81,4 +96,8 @@
 
 </div>
 </form></div>
+
+
+
+
 {% endblock %}

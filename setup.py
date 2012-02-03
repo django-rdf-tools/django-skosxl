@@ -28,11 +28,13 @@ setup(
     #download_url='git://github.com/quinode/django-skosxl.git',
     zip_safe=False,
     install_requires = ['django-taggit==0.9.3',
-                        'django-livesettings==1.4-7',
-                        'sorl-thumbnail==11.09',
+                        'SPARQLWrapper>=1.5.0',
+                        'django-extensions>=0.7.1',
+                        'django-admin-tools>=0.4.1'
                         ],
     dependency_links = [
-        'http:://github.com/jonasgeiregat/django-templatetag-sugar.git#egg=templatetag_sugar'
+        'https://github.com/flupke/django-taggit-templatetags.git#egg=taggit_templatetags',
+        'https://github.com/twidi/django-extended-choices.git#egg=extended_choices',
     ],
 )
 
