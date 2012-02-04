@@ -1,2 +1,3 @@
 recursive-include skosxl/locale *.po *.mo
 recursive-include skosxl/templates *.html *.js
+recursive-include skosxl/static *.js *.css *.png *.jpg
