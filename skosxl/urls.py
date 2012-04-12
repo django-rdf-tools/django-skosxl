@@ -1,11 +1,16 @@
 # -*- coding:utf-8 -*-
 from django.conf.urls.defaults import *
 
-urlpatterns = patterns('',
+urlpatterns = patterns('skosxl.views',
 
-    url(r'^concept_tree/(?P<scheme_id>\d+)/$','skosxl.views.concept_tree', name='json_concept_tree'),
+    url(r'^admin_scheme_tree/(?P<scheme_id>\d+)/$','json_scheme_tree',{'admin_url': True},'json_admin_scheme_tree'),
+    url(r'^json_scheme_tree/(?P<scheme_id>\d+)/$','json_scheme_tree', {'admin_url': False},'json_scheme_tree'),
 
-    url(r'^all/$', 'skosxl.views.tag_list', name="tag_list"),
-    #url(r'^(?P<slug>[\w-]+)/$', 'skosxl.views.tag_detail', name="tag_detail"),
+    url(r'^scheme/(?P<slug>[\w-]+)/$', 'scheme_detail', name="scheme_detail"),
+    url(r'^concept/(?P<scheme_id>\d+)/$', 'concept_detail', name="concept_detail"),
+    url(r'^label/(?P<slug>[\w-]+)/$', 'tag_detail', name="tag_detail"),
+    
+    url(r'^sparql/$', 'sparql_query', name="sparql_query")
+    
         
 )

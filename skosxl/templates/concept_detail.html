@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block meta_title %}Concept : {{object}}{% endblock %}
+
+{% block document %}
+
+<div id="title" class="grid_12 grid">
+{% block title %}<h3>Concept : {{object}}</h3>{% endblock %}
+    <p>Ajouté le {{object.created|date:'l t F Y'}} par {{object.user}}</p>
+    <br/>
+</div>
+
+{% block content %}
+<div id="content">
+    <div class="grid_4 grid">
+        
+        
+
+    </div>
+    
+
+    
+</div>
+{% endblock %}    
+{% endblock %}
+

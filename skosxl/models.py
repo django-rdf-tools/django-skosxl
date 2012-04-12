@@ -16,6 +16,8 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 from taggit.models import TagBase, GenericTaggedItemBase
+import json
+
 
 LABEL_TYPES = Choices(
     ('prefLabel',    0,  _(u'preferred')),
@@ -77,6 +79,52 @@ class Scheme(models.Model):
     
     def __unicode__(self):
         return self.pref_label
+    def get_absolute_url(self):
+        return reverse('scheme_detail', args=[self.slug])
+    def tree(self):
+        tree = (self, [])  # result is a tuple(scheme,[child concepts])
+        for concept in Concept.objects.filter(scheme=self,top_concept=True):
+            tree[1].append((concept,concept.get_narrower_concepts())) 
+            #with nested tuple(concept, [child concepts])
+        return tree 
+    def test_tree(self):
+        i = self.tree()
+        print i[0]
+        for j in i[1]:
+            print u'--' +unicode(j[0])
+            for k in j[1]:
+                print u'----' + unicode(k[0])
+                for l in k[1]:
+                    print u'------' + unicode(l[0])
+                    for m in l[1]:
+                        print u'--------' + unicode(m[0])         
+   
+                        for idx, val in enumerate(ints):
+                            print idx, val
+   
+    def json_tree(self,admin_url=False):
+        i = self.tree()
+        prefix = '/admin' if admin_url else ''
+        ja_tree = {'name' : i[0].pref_label, 'children' : []}
+        for jdx, j in enumerate(i[1]):#j[0] is a concept, j[1] a list of child concepts
+            ja_tree['children'].append({'name':j[0].pref_label,
+                                        'url':prefix+'/skosxl/concept/'+str(j[0].id)+'/',
+                                        'children':[]})
+            for kdx, k in enumerate(j[1]):
+                ja_tree['children'][jdx]['children'].append({'name':k[0].pref_label,
+                                            'url':prefix+'/skosxl/concept/'+str(k[0].id)+'/',
+                                            'children':[]})
+                for ldx,l in enumerate(k[1]):
+                    ja_tree['children'][jdx]['children'][kdx]['children'].append({'name':l[0].pref_label,
+                                                'url':prefix+'/skosxl/concept/'+str(l[0].id)+'/',
+                                                'children':[]})
+                    for mdx, m in enumerate(l[1]):
+                        ja_tree['children'][jdx]['children'][kdx]['children'][ldx]['children'].append({'name':m[0].pref_label,
+                                                    'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
+                                                    #'children':[] #stop
+                                                    })
+        return json.dumps(ja_tree)
+    
     
 class Concept(models.Model):
     definition  = models.TextField(_(u'definition'), blank=True)
@@ -100,6 +148,8 @@ class Concept(models.Model):
                                             verbose_name=(_(u'semantic relations')))
     def __unicode__(self):
         return self.pref_label
+    def get_absolute_url(self):
+        return reverse('concept_detail', args=[self.id])
     def save(self,skip_name_lookup=False, *args, **kwargs):
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
@@ -112,7 +162,14 @@ class Concept(models.Model):
             self.pref_label = label
             #self.save(skip_name_lookup=True)
         super(Concept, self).save(*args, **kwargs) 
-            
+    def get_narrower_concepts(self):
+        childs = []
+        if SemRelation.objects.filter(origin_concept=self,rel_type=1).exists():
+            for narrower in SemRelation.objects.filter(origin_concept=self,rel_type=1):
+                childs.append(( narrower.target_concept,
+                                narrower.target_concept.get_narrower_concepts()
+                                ))
+        return childs
 
 
 class Label(TagBase):

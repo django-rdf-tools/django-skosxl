@@ -48,41 +48,41 @@ class ConceptAdmin(FkAutocompleteAdmin):
     list_filter = ('scheme','status')
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
-    def change_view(self, request, object_id, extra_context=None):
-        from SPARQLWrapper import SPARQLWrapper,JSON, XML
-        #import pdb; pdb.set_trace()
-        obj = Concept.objects.get(id=object_id)
-        my_context = {'lists' : []}
-        endpoints = (   
-                        #('AGROVOC','http://202.73.13.50:55824/catalogs/performance/repositories/agrovoc'),
-                        #('ISIDORE','http://www.rechercheisidore.fr/sparql?format=application/sparql-results+json'),
-                        ('GEMET','http://cr.eionet.europa.eu/sparql'),
-                    )
-        for endpoint in endpoints :
-            try:
-                sparql = SPARQLWrapper(endpoint[1])
-                sparql.setQuery(u"""
-                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                    SELECT ?label ?uri WHERE {
-                      ?uri a skos:Concept .
-                      ?uri skos:prefLabel ?label .
-                      FILTER(regex(str(?label),""" + u'"'+obj.pref_label+u'"' + u""","i"))
-                      FILTER( lang(?label) = "fr" )
-                    }
-                """)
-                sparql.setReturnFormat(JSON)
-                results = sparql.query().convert()
-                # for result in results["results"]["bindings"]:            
-                #     print result["label"]["value"]
+    # def change_view(self, request, object_id, extra_context=None):
+    #     from SPARQLWrapper import SPARQLWrapper,JSON, XML
+    #     #import pdb; pdb.set_trace()
+    #     obj = Concept.objects.get(id=object_id)
+    #     my_context = {'lists' : []}
+    #     endpoints = (   
+    #                     #('AGROVOC','http://202.73.13.50:55824/catalogs/performance/repositories/agrovoc'),
+    #                     #('ISIDORE','http://www.rechercheisidore.fr/sparql?format=application/sparql-results+json'),
+    #                     ('GEMET','http://cr.eionet.europa.eu/sparql'),
+    #                 )
+    #     for endpoint in endpoints :
+    #         try:
+    #             sparql = SPARQLWrapper(endpoint[1])
+    #             sparql.setQuery(u"""
+    #                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    #                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    #                 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    #                 SELECT ?label ?uri WHERE {
+    #                   ?uri a skos:Concept .
+    #                   ?uri skos:prefLabel ?label .
+    #                   FILTER(regex(str(?label),""" + u'"'+obj.pref_label+u'"' + u""","i"))
+    #                   FILTER( lang(?label) = "fr" )
+    #                 }
+    #             """)
+    #             sparql.setReturnFormat(JSON)
+    #             results = sparql.query().convert()
+    #             # for result in results["results"]["bindings"]:            
+    #             #     print result["label"]["value"]
+    #     
+    #             my_context['lists'].append({'name': endpoint[0],'items':results["results"]["bindings"]})
+    #         except Exception,e :
+    #             print "Caught:", e            
+    #         
+    #     return super(ConceptAdmin, self).change_view(request, object_id, extra_context=my_context)
         
-                my_context['lists'].append({'name': endpoint[0],'items':results["results"]["bindings"]})
-            except Exception,e :
-                print "Caught:", e            
-            
-        return super(ConceptAdmin, self).change_view(request, object_id,
-                extra_context=my_context)
     def changelist_view(self, request, extra_context=None):
         try :
             scheme_id = int(request.GET['scheme__id__exact'])

@@ -1,7 +1,7 @@
 var r = 960 / 2;
 
 var tree = d3.layout.tree()
-    .size([360, r - 120])
+    .size([180, r -120])
     .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
 
 var diagonal = d3.svg.diagonal.radial()
@@ -28,7 +28,7 @@ d3.json(json_data, function(json) {
       .attr("class", "node")
       .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
       .on("click", function(d,i) { 
-          window.location.href = d.admin_url ; 
+          window.location.href = d.url ; 
           })
 
   node.append("circle")
