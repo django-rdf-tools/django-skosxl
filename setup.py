@@ -27,10 +27,11 @@ setup(
     #download_url = "https://github.com/quinode/django-skosxl/tarball/%s" % (VERSION),
     #download_url='git://github.com/quinode/django-skosxl.git',
     zip_safe=False,
-    install_requires = ['django-taggit==0.9.3',
+    install_requires = ['django-taggit>=0.9.3',
                         'SPARQLWrapper>=1.5.0',
                         'django-extensions>=0.7.1',
-                        'django-admin-tools>=0.4.1'
+                        'django-admin-tools>=0.4.1',
+                        'django-extended-choices'
                         ],
     dependency_links = [
         'https://github.com/flupke/django-taggit-templatetags.git#egg=taggit_templatetags',

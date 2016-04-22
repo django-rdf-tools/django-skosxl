@@ -14,7 +14,10 @@ from django.utils.translation import ugettext_lazy
 from extended_choices import Choices
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import User
+# update this to use customisable setting
+# from django.contrib.auth.models import User
+from django.conf import settings
+
 from taggit.models import TagBase, GenericTaggedItemBase
 import json
 
@@ -136,7 +139,7 @@ class Concept(models.Model):
     status      = models.PositiveSmallIntegerField( _(u'review status'),
                                                     choices=REVIEW_STATUS.CHOICES, 
                                                     default=REVIEW_STATUS.active)
-    user        = models.ForeignKey(User,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
 
@@ -178,7 +181,7 @@ class Label(TagBase):
     '''
     # FIELDS name and slug are defined in TagBase    
     language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default='fr')
-    user        = models.ForeignKey(User,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
     uri         = models.CharField(_(u'author URI'),blank=True,max_length=250,editable=False)    
     author_uri  = models.CharField(_(u'main URI'),blank=True,max_length=250,editable=False)    
     created     = exfields.CreationDateTimeField(_(u'created'))

@@ -56,7 +56,9 @@
 from django import forms
 from django.conf import settings
 from django.utils.safestring import mark_safe
-from django.utils.text import truncate_words
+# remove deprecated - now -dead method
+#from django.utils.text import truncate_words
+from django.utils.text import Truncator
 from django.template.loader import render_to_string
 from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 import operator
@@ -68,8 +70,9 @@ from django.utils.encoding import smart_str
 from django.utils.translation import ugettext as _
 from django.utils.text import get_text_list
 # added by mikele
-from django.conf.urls.defaults import *
-
+# from django.conf.urls.defaults import *
+from django.conf.urls import patterns
+from django.contrib.admin.sites import site
 
 
 
@@ -83,7 +86,7 @@ class FkSearchInput(ForeignKeyRawIdWidget):
     widget_template = None
     # Set this to the patch of the search view
     search_path = '../foreignkey_autocomplete/'
-
+ # ?????   admin_site = site
     class Media:
         css = {
             'all': ('autocomplete/css/jquery.autocomplete.css',)
@@ -98,7 +101,7 @@ class FkSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return truncate_words(obj, 14)
+        return Truncate(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None):
         self.search_fields = search_fields
@@ -176,7 +179,7 @@ class NoLookupsForeignKeySearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return truncate_words(obj, 14)
+        return Truncate(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None):
         self.search_fields = search_fields
@@ -237,7 +240,7 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
     widget_template = None
     # Set this to the patch of the search view
     search_path = '../foreignkey_autocomplete/'
-
+    admin_site = site
     class Media:
         css = {
             'all': ('autocomplete/css/jquery.autocomplete.css',)
@@ -252,15 +255,18 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return truncate_words(obj, 14)
+        return Truncate(obj).words(14)
 
-    def __init__(self, rel, search_fields, attrs=None):
+    def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
-        super(InlineSearchInput, self).__init__(rel, attrs)
+        self.admin_site = admin_site
+ #       import pdb; pdb.set_trace()
+        super(InlineSearchInput, self).__init__(rel, attrs  )
 
     def render(self, name, value, attrs=None):
         if attrs is None:
             attrs = {}
+        # import pdb; pdb.set_trace()
         output = [super(InlineSearchInput, self).render(name, value, attrs)]
         opts = self.rel.to._meta
         app_label = opts.app_label
