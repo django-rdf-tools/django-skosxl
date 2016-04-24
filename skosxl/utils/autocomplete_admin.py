@@ -261,7 +261,7 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
         self.search_fields = search_fields
         self.admin_site = admin_site
  #       import pdb; pdb.set_trace()
-        super(InlineSearchInput, self).__init__(rel, attrs  )
+        super(InlineSearchInput, self).__init__(rel, admin_site, attrs  )
 
     def render(self, name, value, attrs=None):
         if attrs is None:
@@ -288,7 +288,7 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
         context = {
             'url': url,
             'related_url': related_url,
-            'admin_media_prefix': settings.ADMIN_MEDIA_PREFIX,
+            'admin_media_prefix': settings.STATIC_URL,
             'search_path': self.search_path,
             'search_fields': ','.join(self.search_fields),
             'model_name': model_name,
