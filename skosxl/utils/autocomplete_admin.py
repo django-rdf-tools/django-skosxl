@@ -103,9 +103,10 @@ class FkSearchInput(ForeignKeyRawIdWidget):
         obj = self.rel.to._default_manager.get(**{key: value})
         return Truncate(obj).words(14)
 
-    def __init__(self, rel, search_fields, attrs=None):
+    def __init__(self, rel, search_fields, attrs=None, admin_site = site):
         self.search_fields = search_fields
-        super(FkSearchInput, self).__init__(rel, attrs)
+        self.admin_site = site
+        super(FkSearchInput, self).__init__(rel, admin_site, attrs)
 
     def render(self, name, value, attrs=None):
         if attrs is None:
@@ -131,7 +132,7 @@ class FkSearchInput(ForeignKeyRawIdWidget):
         context = {
             'url': url,
             'related_url': related_url,
-            'admin_media_prefix': settings.ADMIN_MEDIA_PREFIX,
+            'admin_media_prefix': settings.STATIC_URL,
             'search_path': self.search_path,
             'search_fields': ','.join(self.search_fields),
             'model_name': model_name,
@@ -181,9 +182,10 @@ class NoLookupsForeignKeySearchInput(ForeignKeyRawIdWidget):
         obj = self.rel.to._default_manager.get(**{key: value})
         return Truncate(obj).words(14)
 
-    def __init__(self, rel, search_fields, attrs=None):
+    def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
-        super(NoLookupsForeignKeySearchInput, self).__init__(rel, attrs)
+        self.admin_site = site
+        super(NoLookupsForeignKeySearchInput, self).__init__(rel, admin_site, attrs)
 
     def render(self, name, value, attrs=None):
         if attrs is None:
@@ -209,7 +211,7 @@ class NoLookupsForeignKeySearchInput(ForeignKeyRawIdWidget):
         context = {
             'url': url,
             'related_url': related_url,
-            'admin_media_prefix': settings.ADMIN_MEDIA_PREFIX,
+            'admin_media_prefix': settings.STATIC_URL,
             'search_path': self.search_path,
             'search_fields': ','.join(self.search_fields),
             'model_name': model_name,
