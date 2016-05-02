@@ -175,7 +175,7 @@ class Concept(models.Model):
         if not skip_name_lookup: #updating the pref_label
             try:
                 lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
-                label = lookup_label.name
+                label = lookup_label.label_text
             except Label.DoesNotExist:
                 label =  '< no label >'
             self.pref_label = label
@@ -199,7 +199,7 @@ class Notation(models.Model):
         verbose_name_plural = _(u'notations')
 
     
-class Label(TagBase):
+class Label(models.Model):
     '''
     Defines a SKOS-XL Label Class, and also a Tag in django-taggit
     '''
@@ -223,7 +223,7 @@ class Label(TagBase):
          return unicode(self.label_text)
     def create_concept_from_label(self):
         if not self.concept:
-            self.label_text = self.name
+            # self.label_text = self.name
             c = Concept(pref_label=self.__unicode__(),
                         changenote=unicode(ugettext_lazy(u'Created from tag "')+self.__unicode__()+u'"'))
             c.save(skip_name_lookup=True)# because we just set it
@@ -248,38 +248,6 @@ class LabelledItem(GenericTaggedItemBase):
     tag = models.ForeignKey(Label, related_name="skosxl_label_items")
 
  
- 
-# # Not used anymore        
-# class LabelProperty(models.Model):
-#     '''
-#     Links a RDF literal (the Term class object here) to a skos:Concept
-#     Qualifies the relation by using a sub-property of skosxl:Label 
-#     '''
-#     label       = models.ForeignKey(Label, verbose_name=(_(u'label')))         
-#     concept     = models.ForeignKey(Concept, related_name="labels", verbose_name=(_(u'concept')))
-#     label_type  = models.PositiveSmallIntegerField( _(u'label type'),
-#                                                     choices=LABEL_TYPES.CHOICES, 
-#                                                     default=LABEL_TYPES.prefLabel)
-#     class Meta: 
-#         verbose_name = _(u'Label property')
-#         verbose_name_plural = _(u'Label properties') 
-#     def __unicode__(self):
-#         return self.label.__unicode__() + unicode(' : ') + \
-#             unicode(LABEL_TYPES.CHOICES_DICT[self.label_type]) + \
-#             unicode(' of the concept : ') + self.concept.__unicode__()      
-#         
-#     def save(self, *args, **kwargs):
-#         if self.label_type == LABEL_TYPES.prefLabel:
-#             if LabelProperty.objects.filter(concept=self.concept,
-#                                             label_type=LABEL_TYPES.prefLabel,
-#                                             label__language=self.label.language
-#                                             ).exists():
-#                 raise ValidationError(_(u'There can be only one preferred label by language'))
-#             self.concept.save() #pour déclencher la mise à jour du concept.pref_label
-#             # TODO modifier le modeladmin clean() aussi sinon moche erreur
-#         super(LabelProperty, self).save(*args, **kwargs)
-#     
-
 def create_reverse_relation(concept,rel_type):
     print 'creating inverse relation'
     new_rel = SemRelation(  origin_concept=concept.target_concept, 

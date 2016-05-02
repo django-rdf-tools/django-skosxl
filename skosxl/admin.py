@@ -15,9 +15,9 @@ from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompl
     
 class LabelInline(InlineAutocompleteAdmin):
     model = Label
-    readonly_fields = ('slug','created')
-    fields = ('language','label_type','name','slug','created')
-    related_search_fields = {'label' : ('name','slug')}
+    readonly_fields = ('created',)
+    fields = ('language','label_type','label_text','created')
+    related_search_fields = {'label' : ('label_text',)}
     extra=1    
 
 class NotationInline(InlineAutocompleteAdmin):
@@ -121,18 +121,19 @@ create_concept_command.short_description = _(u"Create concept(s) from selected l
 
 class ConceptInline(InlineAutocompleteAdmin):
     model = Concept
-    # readonly_fields = ('pref_label',)
+    readonly_fields = ('pref_label',)
     fields = ('pref_label','top_concept','status')
+ #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 0
 
 class LabelAdmin(FkAutocompleteAdmin):
-    list_display = ('label_text','slug','label_type','concept')
+    list_display = ('label_text','label_type','concept')
     fields = ('label_text','language','label_type','concept')
     related_search_fields = {'concept' : ('pref_label','definition')}
-    actions = [create_concept_command]
+#    actions = [create_concept_command]
     #list_editable = ('name','slug')
-    search_fields = ['name','slug']    
+    search_fields = ['label_text',]    
 
 admin.site.register(Label, LabelAdmin)    
 
