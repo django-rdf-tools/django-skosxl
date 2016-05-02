@@ -19,21 +19,23 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 
 from taggit.models import TagBase, GenericTaggedItemBase
+from taggit.managers import TaggableManager
+
 import json
 
 
 LABEL_TYPES = Choices(
-    ('prefLabel',    0,  _(u'preferred')),
-    ('altLabel',     1,  _(u'alternative')),
-    ('hiddenLabel',  2,  _(u'hidden')),
+    ('prefLabel',    0,  u'preferred'),
+    ('altLabel',     1, u'alternative'),
+    ('hiddenLabel',  2,  u'hidden'),
 )
 
 REL_TYPES = Choices(
-    # ('broaderTransitive',   0,  _(u'Has a broader (transitive) concept')),
-    # ('narrowerTransitive',  1,  _(u'Has a narrower (transitive) concept')),
-    ('broader',             0,  _(u'has a broader concept')),
-    ('narrower',            1,  _(u'has a narrower concept')),
-    ('related',             2,  _(u'has a related concept')),    
+    # ('broaderTransitive',   0,  u'Has a broader (transitive) concept'),
+    # ('narrowerTransitive',  1,  u'Has a narrower (transitive) concept'),
+    ('broader',             0,  u'has a broader concept'),
+    ('narrower',            1,  u'has a narrower concept'),
+    ('related',             2,  u'has a related concept'),    
 )
 
 reverse_map = {   
@@ -45,38 +47,51 @@ reverse_map = {
 }
 
 MATCH_TYPES = Choices(
-    ('exactMatch',   0,  _(u'matches exactly')),
-    ('closeMatch',   1,  _(u'matches closely')),
-    ('broadMatch',   2,  _(u'has a broader match')),
-    ('narrowMatch',  3,  _(u'has a narrower match')),
-    ('relatedMatch', 4,  _(u'has a related match')),    
+    ('exactMatch',   0,  u'matches exactly'),
+    ('closeMatch',   1,  u'matches closely'),
+    ('broadMatch',   2,  u'has a broader match'),
+    ('narrowMatch',  3,  u'has a narrower match'),
+    ('relatedMatch', 4,  u'has a related match'),    
 )
 
 
 LANG_LABELS = (
     ('fr',_(u'French')),
+    ('de',_(u'German')),
     ('en',_(u'English')),
     ('es',_(u'Spanish')),
     ('it',_(u'Italian')),
     ('pt',_(u'Portuguese'))
 )
 
-DEFAULT_LANG = 'fr'
+DEFAULT_LANG = 'en'
 
 REVIEW_STATUS = Choices(
-    ('active',  0,  _(u'Active')),
-    ('draft',   1,  _(u'Draft')),
-    ('doubled', 2,  _(u'Double')),
-    ('dispute', 3,  _(u'Dispute')),
-    ('todo',    4,  _(u'Not classified')),
+    ('active',  0,  u'Active'),
+    ('draft',   1,  u'Draft'),
+    ('doubled', 2,  u'Double'),
+    ('dispute', 3,  u'Dispute'),
+    ('todo',    4,  u'Not classified'),
 )
 
 DEFAULT_SCHEME_SLUG = 'general'
 
+# defines a namespace so we can use short prefix where convenient         
+class Namespace(models.Model) :
+    uri = models.CharField('uri',max_length=100, null=False)
+    prefix = models.CharField('prefix',max_length=8,unique=True,null=False)
+    notes = models.TextField(_(u'change note'),blank=True)
+    tags = TaggableManager(_('tags'), blank=True, help_text='what is the provenance of the namespace')
+    class Meta: 
+        verbose_name = _(u'namespace')
+        verbose_name_plural = _(u'namespaces')
+    def __unicode__(self):
+        return self.uri    
+        
 class Scheme(models.Model):
     pref_label  = models.CharField(_(u'label'),blank=True,max_length=255)#should just be called label
     slug        = exfields.AutoSlugField(populate_from=('pref_label'))
-    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True)   
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
     
@@ -105,6 +120,7 @@ class Scheme(models.Model):
                         for idx, val in enumerate(ints):
                             print idx, val
    
+    # needs fixing - has limited depth of traversal - probably want an option to paginate and limit.
     def json_tree(self,admin_url=False):
         i = self.tree()
         prefix = '/admin' if admin_url else ''
@@ -131,7 +147,7 @@ class Scheme(models.Model):
     
 class Concept(models.Model):
     definition  = models.TextField(_(u'definition'), blank=True)
-    notation    = models.CharField(blank=True, null=True, max_length=100)
+#    notation    = models.CharField(blank=True, null=True, max_length=100)
     scheme      = models.ForeignKey(Scheme, blank=True, null=True)
     changenote  = models.TextField(_(u'change note'),blank=True)
     created     = exfields.CreationDateTimeField(_(u'created'))
@@ -174,32 +190,59 @@ class Concept(models.Model):
                                 ))
         return childs
 
+class Notation(models.Model):
+    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
+    code =  models.CharField(_(u'notation'),max_length=10, null=False)
+    namespace = models.ForeignKey(Namespace,verbose_name=_(u'namespace(type)'))
+    class Meta: 
+        verbose_name = _(u'SKOS notation')
+        verbose_name_plural = _(u'notations')
 
+    
 class Label(TagBase):
     '''
     Defines a SKOS-XL Label Class, and also a Tag in django-taggit
     '''
-    # FIELDS name and slug are defined in TagBase    
+    # FIELDS name and slug are defined in TagBase  - they are forced to be unique
+    # so if a concept is to be made available as a tag then it must conform to this constraint - generating a label without a Concept implies its is a tag generation - and name will be forced to be unique.
+    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
+    label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES.CHOICES), default= LABEL_TYPES.prefLabel)
+    label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
     language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default='fr')
+ 
+    #metadata
     user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
-    uri         = models.CharField(_(u'author URI'),blank=True,max_length=250,editable=False)    
-    author_uri  = models.CharField(_(u'main URI'),blank=True,max_length=250,editable=False)    
+    uri         = models.CharField(_(u'author URI'),blank=True,max_length=250,editable=True)    
+    author_uri  = models.CharField(u'main URI',blank=True,max_length=250,editable=True)    
     created     = exfields.CreationDateTimeField(_(u'created'))
     modified    = exfields.ModificationDateTimeField(_(u'modified'))
-    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
-    label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=LABEL_TYPES.CHOICES, default= LABEL_TYPES.prefLabel)
+    
     def get_absolute_url(self):
         return reverse('tag_detail', args=[self.slug])
-    # def __unicode__(self):
-    #     return unicode(self.name)
+    def __unicode__(self):
+         return unicode(self.label_text)
     def create_concept_from_label(self):
         if not self.concept:
+            self.label_text = self.name
             c = Concept(pref_label=self.__unicode__(),
                         changenote=unicode(ugettext_lazy(u'Created from tag "')+self.__unicode__()+u'"'))
             c.save(skip_name_lookup=True)# because we just set it
             self.concept = c
             self.save()
-
+            
+    def save(self, *args, **kwargs):
+        if not self.name :
+            self.name = self.label_text
+        if self.label_type == LABEL_TYPES.prefLabel:
+            if Label.objects.filter(concept=self.concept,
+                                             label_type=LABEL_TYPES.prefLabel,
+                                             language=self.language
+                                             ).exists():
+                raise ValidationError(_(u'There can be only one preferred label by language'))
+            if not self.concept.pref_label or self.concept.pref_label == '<no label>' :
+                self.concept.pref_label = self.label_text
+                self.concept.save()
+        super(Label, self).save()
         
 class LabelledItem(GenericTaggedItemBase):
     tag = models.ForeignKey(Label, related_name="skosxl_label_items")
@@ -252,11 +295,12 @@ class SemRelation(models.Model):
     '''
     origin_concept = models.ForeignKey(Concept,related_name='rel_origin',verbose_name=(_(u'Origin')))
     target_concept = models.ForeignKey(Concept,related_name='rel_target',verbose_name=(_(u'Target')))
-    rel_type = models.PositiveSmallIntegerField( _(u'Type of semantic relation'),
-                                                    choices=REL_TYPES.CHOICES, 
+    rel_type = models.PositiveSmallIntegerField( _(u'Type of semantic relation'),choices=REL_TYPES.CHOICES, 
                                                     default=REL_TYPES.narrower)
+
+    #    rel_type = models.ForeignKey(RelationType, related_name='curl', verbose_name=_(u'Type of semantic relation'))
     class Meta: 
-        verbose_name = _(u'Semantic relations')
+        verbose_name = _(u'Semantic relation')
         verbose_name_plural = _(u'Semantic relations')
         
     def save(self,skip_inf=False, *args, **kwargs):
@@ -280,17 +324,17 @@ class SemRelation(models.Model):
 #     def __unicode__(self):
 #         return self.name
 #         
-# class MapRelation(models.Model):
-#     origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_(u'Local concept to map')))
-#     #target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
+class MapRelation(models.Model):
+    origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_(u'Local concept to map')))
+#     target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
 #     target_label = models.CharField(_(u'Preferred label'),max_length=255)#nan nan il faut un autre concept stocké dans un scheme
-#     uri = models.CharField(_(u'Concept URI'), max_length=250)
+    uri = models.CharField(_(u'Target Concept URI'), max_length=250)
 #     voc = models.ForeignKey(Vocabulary, verbose_name=(_(u'SKOS Thesaurus')))
-#     match_type = models.PositiveSmallIntegerField( _(u'Type of mapping relation'),
-#                                                     choices=MATCH_TYPES.CHOICES, 
-#                                                     default=MATCH_TYPES.exactMatch)
-#     class Meta: 
-#         verbose_name = _(u'Mapping relation')
-#         verbose_name_plural = _(u'Mapping relations')
+    match_type = models.PositiveSmallIntegerField( _(u'Type of mapping relation'),
+                                                     choices=MATCH_TYPES.CHOICES, 
+                                                     default=MATCH_TYPES.closeMatch)
+    class Meta: 
+        verbose_name = _(u'Mapping relation')
+        verbose_name_plural = _(u'Mapping relations')
 #     
 
