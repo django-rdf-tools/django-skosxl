@@ -27,7 +27,7 @@
 
 {% block content_title %}
 {% if original %}
-    <h1>Modification d'un concept : {{ adminform.form.instance }}</h1>
+    <h1>{% trans "View on site" %} {{ adminform.form.instance }}</h1>
 {% else %}
     <h1>{{ title }}</h1>
 {% endif %}
@@ -72,7 +72,7 @@
 {% block after_related_objects %}
 
 <div class="module">
-    <h2>Correspondances avec d'autres Thésaurus</h2>
+    <h2>{% trans "Mapping relations" %}</h2>
     <div class="form-row">
     {% for list in lists %}
         {{list.name}}<ul>

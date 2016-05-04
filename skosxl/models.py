@@ -162,7 +162,7 @@ class Concept(models.Model):
     pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,max_length=255)
     slug        = exfields.AutoSlugField(populate_from=('pref_label'))
     top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
-    sem_relations = models.ManyToManyField( "self",symmetrical=False,
+    sem_relatons = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
                                             verbose_name=(_(u'semantic relations')))
     def __unicode__(self):
@@ -189,11 +189,19 @@ class Concept(models.Model):
                                 narrower.target_concept.get_narrower_concepts()
                                 ))
         return childs
+        
+    def get_related_notation(self, ns) :
+        mr = MapRelation.objects.filter(origin_concept = self, uri__startswith = ns )
+        if mr :
+            return(mr[0].uri[mr[0].uri.rfind('/')+1:])
+        return None
 
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
     code =  models.CharField(_(u'notation'),max_length=10, null=False)
     namespace = models.ForeignKey(Namespace,verbose_name=_(u'namespace(type)'))
+    def __unicode__(self):
+        return self.code + '^^<' + self.namespace.uri + '>'  
     class Meta: 
         verbose_name = _(u'SKOS notation')
         verbose_name_plural = _(u'notations')
@@ -231,8 +239,8 @@ class Label(models.Model):
             self.save()
             
     def save(self, *args, **kwargs):
-        if not self.name :
-            self.name = self.label_text
+#        if not self.name :
+#            self.name = self.label_text
         if self.label_type == LABEL_TYPES.prefLabel:
             if Label.objects.filter(concept=self.concept,
                                              label_type=LABEL_TYPES.prefLabel,
