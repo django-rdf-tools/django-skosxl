@@ -1,0 +1,39 @@
+[ {
+		"pk" : null,
+		"model" : "rdf_io.objectmapping",
+		"fields" : {
+			"name" : "skos:Concept default",
+			"id_attr" : "term",
+			"target_uri_expr" : "scheme.uri",
+			"obj_type" : [["skos:Concept"]],
+			"content_type" : ["skosxl", "concept"]
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:Concept default"],
+			"predicate" : "skos:definition",
+			"is_resource" : false,
+			"attr" : "definition"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:Concept default"],
+			"predicate" : "skos:inScheme",
+			"is_resource" : true,
+			"attr" : "scheme.uri"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:Concept default"],
+			"predicate" : "skos:prefLabel",
+			"is_resource" : false,
+			"attr" : "label.label_text"
+		}
+	}
+]

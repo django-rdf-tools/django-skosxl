@@ -137,16 +137,6 @@ class LabelAdmin(FkAutocompleteAdmin):
 
 admin.site.register(Label, LabelAdmin)    
 
-class NamespaceAdmin(FkAutocompleteAdmin):
-    list_display = ('uri','prefix','notes','tags')
-    fields = ('uri','prefix','notes','tags')
-#    related_search_fields = {'concept' : ('pref_label','definition')}
-    #list_editable = ('name','slug')
-    search_fields = ['uri','prefix']    
-
-    
-admin.site.register(Namespace, NamespaceAdmin)  
-    
 
 class SchemeAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')

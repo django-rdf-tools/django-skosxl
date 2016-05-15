@@ -20,6 +20,7 @@ from django.conf import settings
 
 from taggit.models import TagBase, GenericTaggedItemBase
 from taggit.managers import TaggableManager
+from rdf_io.models import Namespace
 
 import json
 
@@ -76,27 +77,29 @@ REVIEW_STATUS = Choices(
 
 DEFAULT_SCHEME_SLUG = 'general'
 
-# defines a namespace so we can use short prefix where convenient         
-class Namespace(models.Model) :
-    uri = models.CharField('uri',max_length=100, null=False)
-    prefix = models.CharField('prefix',max_length=8,unique=True,null=False)
-    notes = models.TextField(_(u'change note'),blank=True)
-    tags = TaggableManager(_('tags'), blank=True, help_text='what is the provenance of the namespace')
-    class Meta: 
-        verbose_name = _(u'namespace')
-        verbose_name_plural = _(u'namespaces')
-    def __unicode__(self):
-        return self.uri    
+    
+class SchemeManager(models.Manager):
+    def get_by_natural_key(self, uri):
+        return self.get( uri = uri)
+        
         
 class Scheme(models.Model):
+    objects = SchemeManager()
+    
     pref_label  = models.CharField(_(u'label'),blank=True,max_length=255)#should just be called label
     slug        = exfields.AutoSlugField(populate_from=('pref_label'))
+    # URI doesnt need to be a registered Namespace unless you want to use prefix:term expansion for it
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True)   
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
     
     def __unicode__(self):
         return self.pref_label
+        
+           
+    def natural_key(self):
+        return( self.uri )
+        
     def get_absolute_url(self):
         return reverse('scheme_detail', args=[self.slug])
     def tree(self):
@@ -144,8 +147,19 @@ class Scheme(models.Model):
                                                     })
         return json.dumps(ja_tree)
     
-    
+class ConceptManager(models.Manager):
+    def get_by_natural_key(self, scheme, term):
+        return self.get( scheme__uri = scheme, term=term)
+        
 class Concept(models.Model):
+    objects = ConceptManager()
+    # this will be the 
+    term = models.CharField(_(u'term'),blank=True,null=True,max_length=255)
+    # not sure we will need this - SKOS names should enforce slug compatibility.
+    slug        = exfields.AutoSlugField(populate_from=('term'))
+    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,max_length=255)
+
+    
     definition  = models.TextField(_(u'definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
     scheme      = models.ForeignKey(Scheme, blank=True, null=True)
@@ -159,14 +173,17 @@ class Concept(models.Model):
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
 
-    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,max_length=255)
-    slug        = exfields.AutoSlugField(populate_from=('pref_label'))
     top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
     sem_relatons = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
                                             verbose_name=(_(u'semantic relations')))
     def __unicode__(self):
-        return self.pref_label
+        return "/".join(self.natural_key())
+    
+    def natural_key(self):
+        return ( self.scheme.natural_key(), self.term, )
+    natural_key.dependencies = ['scheme']
+        
     def get_absolute_url(self):
         return reverse('concept_detail', args=[self.id])
     def save(self,skip_name_lookup=False, *args, **kwargs):
@@ -190,11 +207,17 @@ class Concept(models.Model):
                                 ))
         return childs
         
-    def get_related_notation(self, ns) :
+    def get_related_term(self, ns) :
+        """
+            dumb - just finds first related term - assumes a 1:1 skos:closeMatch semantics
+        """
         mr = MapRelation.objects.filter(origin_concept = self, uri__startswith = ns )
         if mr :
             return(mr[0].uri[mr[0].uri.rfind('/')+1:])
         return None
+    
+    class Meta :
+        unique_together = (('scheme', 'term'),)
 
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
@@ -224,6 +247,7 @@ class Label(models.Model):
     author_uri  = models.CharField(u'main URI',blank=True,max_length=250,editable=True)    
     created     = exfields.CreationDateTimeField(_(u'created'))
     modified    = exfields.ModificationDateTimeField(_(u'modified'))
+    
     
     def get_absolute_url(self):
         return reverse('tag_detail', args=[self.slug])
@@ -301,6 +325,7 @@ class SemRelation(models.Model):
 #         return self.name
 #         
 class MapRelation(models.Model):
+
     origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_(u'Local concept to map')))
 #     target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
 #     target_label = models.CharField(_(u'Preferred label'),max_length=255)#nan nan il faut un autre concept stocké dans un scheme
