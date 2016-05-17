@@ -33,7 +33,46 @@
 			"scope" : ["skos:Concept default"],
 			"predicate" : "skos:prefLabel",
 			"is_resource" : false,
-			"attr" : "label.label_text"
+			"attr" : "label[label_type=0].label_text@language"
+		}
+	},
+	{
+		"pk" : null,
+		"model" : "rdf_io.objectmapping",
+		"fields" : {
+			"name" : "skos:ConceptScheme default",
+			"id_attr" : "uri",
+			"target_uri_expr" : "uri",
+			"obj_type" : [["skos:ConceptScheme"]],
+			"content_type" : ["skosxl", "scheme"]
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:ConceptScheme default"],
+			"predicate" : "skos:definition",
+			"is_resource" : false,
+			"attr" : "definition"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:ConceptScheme default"],
+			"predicate" : "skos:prefLabel",
+			"is_resource" : false,
+			"attr" : "pref_label"
+		}
+	},
+	{
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:ConceptScheme default"],
+			"predicate" : "schememeta.metaprop",
+			"is_resource" : false,
+			"attr" : "schememeta.value"
 		}
 	}
 ]

@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 
-# Part of the django.coop eco-system
-# Based on SKOS ans SKOS-XL ontologies
+# Modified from original unmaintained example as part of the django.coop eco-system
+# Based on SKOS an SKOS-XL ontologies
 # http://www.w3.org/2004/02/skos/core
 # http://www.w3.org/2008/05/skos-xl
-# XL-Labels are managed by taggit Tag model, which is patched above
-# You can then call tag.concept
+# 
+# now synced with a configurable RDF mapping and export module django-rdf-io
 
 from django.db import models
 from django_extensions.db import fields as exfields
@@ -18,9 +18,9 @@ from django.core.urlresolvers import reverse
 # from django.contrib.auth.models import User
 from django.conf import settings
 
-from taggit.models import TagBase, GenericTaggedItemBase
-from taggit.managers import TaggableManager
-from rdf_io.models import Namespace
+#from taggit.models import TagBase, GenericTaggedItemBase
+#from taggit.managers import TaggableManager
+from rdf_io.models import Namespace, GenericMetaProp
 
 import json
 
@@ -55,7 +55,7 @@ MATCH_TYPES = Choices(
     ('relatedMatch', 4,  u'has a related match'),    
 )
 
-
+# TODO - allow these to be defined by the environment - or extended as needed.
 LANG_LABELS = (
     ('fr',_(u'French')),
     ('de',_(u'German')),
@@ -81,8 +81,7 @@ DEFAULT_SCHEME_SLUG = 'general'
 class SchemeManager(models.Manager):
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
-        
-        
+
 class Scheme(models.Model):
     objects = SchemeManager()
     
@@ -92,7 +91,8 @@ class Scheme(models.Model):
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True)   
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
-    
+    definition  = models.TextField(_(u'definition'), blank=True)
+    meta  = models.TextField(_(u'additional metadata'), help_text=_(u'(<predicate> <object> ; list) '), blank=True)
     def __unicode__(self):
         return self.pref_label
         
@@ -146,6 +146,14 @@ class Scheme(models.Model):
                                                     #'children':[] #stop
                                                     })
         return json.dumps(ja_tree)
+
+class SchemeMeta(models.Model):
+    """
+        extensible metadata using rdf_io managed reusable generic metadata properties
+    """
+    scheme      = models.ForeignKey(Scheme) 
+    metaprop   =  models.ForeignKey(GenericMetaProp) 
+    value = models.CharField(_(u'value'),max_length=500)
     
 class ConceptManager(models.Manager):
     def get_by_natural_key(self, scheme, term):
@@ -276,8 +284,8 @@ class Label(models.Model):
                 self.concept.save()
         super(Label, self).save()
         
-class LabelledItem(GenericTaggedItemBase):
-    tag = models.ForeignKey(Label, related_name="skosxl_label_items")
+#class LabelledItem(GenericTaggedItemBase):
+#    tag = models.ForeignKey(Label, related_name="skosxl_label_items")
 
  
 def create_reverse_relation(concept,rel_type):
