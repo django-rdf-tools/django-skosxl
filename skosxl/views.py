@@ -1,9 +1,13 @@
 # # -*- coding:utf-8 -*-
 from django.shortcuts import render_to_response, redirect
-from skosxl.models import Label,Concept,LabelledItem
+from skosxl.models import Label,Concept
 from django.template import RequestContext
 from django.shortcuts import get_object_or_404
-from django.views.generic.list_detail import object_list
+# deprecated since 1.3
+# from django.views.generic.list_detail import object_list
+# but not used anyway?
+# if needed.. from django.views.generic import ListView
+
 from django.http import HttpResponse
 import json
 

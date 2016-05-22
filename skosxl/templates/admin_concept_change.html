@@ -1,5 +1,6 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_modify adminmedia %}
+{% load i18n admin_modify %}
+{% load staticfiles %}
 {% load url from future %}
 
 {% block extrahead %}{{ block.super }}
@@ -8,7 +9,7 @@
 {{ media }}
 {% endblock %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/forms.css" />{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static 'admin' %}css/forms.css" />{% endblock %}
 
 {% block coltype %}{% if ordered_objects %}colMS{% else %}colM{% endif %}{% endblock %}
 
@@ -26,7 +27,7 @@
 
 {% block content_title %}
 {% if original %}
-    <h1>Modification d'un concept : {{ adminform.form.instance }}</h1>
+    <h1>{% trans "View on site" %} {{ adminform.form.instance }}</h1>
 {% else %}
     <h1>{{ title }}</h1>
 {% endif %}
@@ -71,7 +72,7 @@
 {% block after_related_objects %}
 
 <div class="module">
-    <h2>Correspondances avec d'autres Thésaurus</h2>
+    <h2>{% trans "Mapping relations" %}</h2>
     <div class="form-row">
     {% for list in lists %}
         {{list.name}}<ul>

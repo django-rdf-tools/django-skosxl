@@ -15,17 +15,25 @@ from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompl
     
 class LabelInline(InlineAutocompleteAdmin):
     model = Label
-    readonly_fields = ('slug','name','created')
-    fields = ('language','label_type','name','slug','created')
-    related_search_fields = {'label' : ('name','slug')}
+    readonly_fields = ('created',)
+    fields = ('language','label_type','label_text','created')
+    related_search_fields = {'label' : ('label_text',)}
+    extra=1    
+
+class NotationInline(InlineAutocompleteAdmin):
+    model = Notation
+    # readonly_fields = ('slug','created')
+    fields = ('code','namespace')
+    # related_search_fields = {'label' : ('name','slug')}
     extra=1    
     
     
-# class SKOSMappingInline(admin.TabularInline):
-#     model = MapRelation
-#     fields = ('voc','target_label','match_type',)
-#     readonly_fields = ('target_label','uri')
-#     extra=1    
+class SKOSMappingInline(admin.TabularInline):
+    model = MapRelation
+    fk_name = 'origin_concept'
+    fields = ('match_type','uri')
+#    related_search_fields = {'target_concept' : ('labels__name','definition')}
+    extra=1    
 
 class RelInline(InlineAutocompleteAdmin):
     model = SemRelation
@@ -43,8 +51,9 @@ def create_action(scheme):
 class ConceptAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')
     search_fields = ['pref_label','slug','definition']
-    list_display = ('pref_label','notation','status','scheme','top_concept','created')
+    list_display = ('pref_label','status','scheme','top_concept','created')
     list_editable = ('status','scheme','top_concept')
+
     list_filter = ('scheme','status')
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
@@ -91,12 +100,12 @@ class ConceptAdmin(FkAutocompleteAdmin):
         return super(ConceptAdmin, self).changelist_view(request, 
                                         extra_context={'scheme_id':scheme_id})
             
-    fieldsets = (   (_(u'Scheme'), {'fields':('scheme','top_concept')}),
+    fieldsets = (   (_(u'Scheme'), {'fields':('scheme','pref_label','top_concept')}),
                     (_(u'Meta-data'),
-                    {'fields':('notation',('definition','changenote'),'created','modified'),
+                    {'fields':(('definition','changenote'),'created','modified'),
                      'classes':('collapse',)}),
                      )
-    inlines = [  LabelInline, RelInline, ]
+    inlines = [   NotationInline, LabelInline, RelInline, SKOSMappingInline]
     def get_actions(self, request):
         return dict(create_action(s) for s in Scheme.objects.all())
 
@@ -114,19 +123,19 @@ class ConceptInline(InlineAutocompleteAdmin):
     model = Concept
     readonly_fields = ('pref_label',)
     fields = ('pref_label','top_concept','status')
+ #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 0
 
 class LabelAdmin(FkAutocompleteAdmin):
-    list_display = ('name','slug','label_type','concept')
-    fields = ('name','language','label_type','concept')
-    related_search_fields = {'concept' : ('pref_label','definition','notation')}
-    actions = [create_concept_command]
+    list_display = ('label_text','label_type','concept')
+    fields = ('label_text','language','label_type','concept')
+    related_search_fields = {'concept' : ('pref_label','definition')}
+#    actions = [create_concept_command]
     #list_editable = ('name','slug')
-    search_fields = ['name','slug']    
+    search_fields = ['label_text',]    
 
 admin.site.register(Label, LabelAdmin)    
-
 
 
 class SchemeAdmin(FkAutocompleteAdmin):
