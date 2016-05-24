@@ -74,5 +74,26 @@
 			"is_resource" : false,
 			"attr" : "schememeta.value"
 		}
+	},
+	{
+		"pk" : null
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"filter" : "",
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:narrower",
+			"is_resource" : true,
+			"attr" : "semrelation(origin_concept)[rel_type='1'].target_concept"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"filter" : "",
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:broader",
+			"is_resource" : false,
+			"attr" : "semrelation(origin_concept)[rel_type='0'].target_concept"
+		}
 	}
 ]
