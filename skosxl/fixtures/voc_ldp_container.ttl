@@ -1,0 +1,6 @@
+@prefix dcterms: <http://purl.org/dc/terms/>.
+
+<> a <http://www.w3.org/ns/ldp#BasicContainer> ;
+      dcterms:title "Vocabularies container." ;
+      dcterms:description "A container for SKOS vocabularies, memeber of this should be skos:ConceptSchemes"
+	  .

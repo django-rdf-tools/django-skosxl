@@ -101,7 +101,7 @@ class FkSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site = site):
         self.search_fields = search_fields
@@ -180,7 +180,7 @@ class NoLookupsForeignKeySearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
@@ -257,7 +257,7 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
