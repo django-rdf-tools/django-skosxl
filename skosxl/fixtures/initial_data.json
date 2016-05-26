@@ -92,7 +92,7 @@
 			"filter" : "",
 			"scope" : "skos:Concept default",
 			"predicate" : "skos:broader",
-			"is_resource" : false,
+			"is_resource" : true,
 			"attr" : "semrelation(origin_concept)[rel_type='0'].target_concept"
 		}
 	}
