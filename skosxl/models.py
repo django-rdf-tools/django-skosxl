@@ -182,7 +182,7 @@ class Concept(models.Model):
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
 
     top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
-    sem_relatons = models.ManyToManyField( "self",symmetrical=False,
+    sem_relations = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
                                             verbose_name=(_(u'semantic relations')))
     def __unicode__(self):
