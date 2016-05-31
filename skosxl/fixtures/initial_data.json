@@ -1,4 +1,4 @@
-[ {
+[{
 		"pk" : null,
 		"model" : "rdf_io.objectmapping",
 		"fields" : {
@@ -35,8 +35,16 @@
 			"is_resource" : false,
 			"attr" : "label[label_type=0].label_text@language"
 		}
-	},
-	{
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:Concept default"],
+			"predicate" : "skos:altLabel",
+			"is_resource" : false,
+			"attr" : "label[label_type=1].label_text@language"
+		}
+	}, {
 		"pk" : null,
 		"model" : "rdf_io.objectmapping",
 		"fields" : {
@@ -74,13 +82,11 @@
 			"is_resource" : false,
 			"attr" : "schememeta.value"
 		}
-	},
-	{
-		"pk" : null
+	}, {
+		"pk" : null,
 		"model" : "rdf_io.attributemapping",
 		"fields" : {
-			"filter" : "",
-			"scope" : "skos:Concept default",
+			"scope" : ["skos:Concept default"],
 			"predicate" : "skos:narrower",
 			"is_resource" : true,
 			"attr" : "semrelation(origin_concept)[rel_type='1'].target_concept"
@@ -89,11 +95,41 @@
 		"pk" : null,
 		"model" : "rdf_io.attributemapping",
 		"fields" : {
-			"filter" : "",
-			"scope" : "skos:Concept default",
+
+			"scope" : ["skos:Concept default"],
 			"predicate" : "skos:broader",
 			"is_resource" : true,
 			"attr" : "semrelation(origin_concept)[rel_type='0'].target_concept"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+
+			"scope" : ["skos:Concept default"],
+			"predicate" : "skos:notation",
+			"is_resource" : false,
+			"attr" : "notation.code^^namespace.uri"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.objectmapping",
+		"fields" : {
+			"name" : "skos:ConceptScheme topConcepts",
+			"filter" : "top_concept=True",
+			"id_attr" : "term",
+			"target_uri_expr" : "scheme.uri",
+			"obj_type" : [["skos:Concept"]],
+			"content_type" : ["skosxl", "concept"]
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : ["skos:ConceptScheme topConcepts"],
+			"predicate" : "skos:topConceptOf",
+			"is_resource" : true,
+			"attr" : "scheme.uri"
 		}
 	}
 ]
