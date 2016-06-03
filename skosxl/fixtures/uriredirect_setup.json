@@ -13,7 +13,7 @@
 			"service_location" : "",
 			"use_lda" : true,
 			"description" : "SISSVOC API binding, assumes a sissvoc instance at the URI register root {root} where the URIs of terms  are based on two extra levels of register/container : {root}{domain}{scheme}{term}\r\n\r\n{domain} is a governance domain - eg \"examples\"\r\n\r\nAs an API this will have several child rules (i.e. whose parent is this rule) that define no service_location or uri_register - but define a view or other query param set.",
-			"parent" : null,
+			"parent" : ["SISSVoc API for Concepts"]ull,
 			"pattern" : "(?P<domain>[^\\/]+)/(?P<scheme>[^\\/]+)/(?P<term>[^\\?]+)",
 			"register" : null,
 			"view_pattern" : "",
@@ -21,14 +21,29 @@
 			"view_param" : "_view",
 			"service_params" : ""
 		}
-	}, {
+	},  {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "SISSVOC API binding for conceptSchemes, assumes a SISSVOC instance at the URI register root {root} where the URIs of terms  are based on two extra levels of register/container : {root}/{domain}/{scheme}\r\n\r\nAs an API this will have several child rules (i.e. whose parent is this rule) that define no service_location or uri_register - but define a view or other query param set.",
+			"parent" : ["SISSVoc API for Concepts"]ull,
+			"pattern" : "^(?P<domain>[^\\/]+)/(?P<scheme>[^\\/]+)$",
+			"register" : null,
+			"view_pattern" : "",
+			"label" : "SISSVoc API for ConceptSchemes",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	},{
 		"pk" : null,
 		"model" : "uriredirect.rewriterule",
 		"fields" : {
 			"service_location" : "http://resources.opengeospatial.org:8080/dna",
 			"use_lda" : true,
 			"description" : "Local SISSVoc service endpoint binding",
-			"parent" : "SISSVoc API for ConceptSchemes",
+			"parent" : ["SISSVoc API for ConceptSchemes"],
 			"pattern" : "",
 			"register" : "voc",
 			"view_pattern" : "",
@@ -43,7 +58,7 @@
 			"service_location" : "",
 			"use_lda" : true,
 			"description" : "A sub rule view invoked when _view=skos:allbroader is set (gets skos broaderTransitive properties)",
-			"parent" : "SISSVoc API for Concepts",
+			"parent" : ["SISSVoc API for Concepts"],
 			"pattern" : "",
 			"register" : null,
 			"view_pattern" : "skos:allbroader",
@@ -58,7 +73,7 @@
 			"service_location" : "",
 			"use_lda" : true,
 			"description" : "A sub rule view invoked when _view=skos:narrower is set",
-			"parent" : "SISSVoc API for Concepts",
+			"parent" : ["SISSVoc API for Concepts"],
 			"pattern" : "",
 			"register" : null,
 			"view_pattern" : "skos:narrower",
@@ -73,7 +88,7 @@
 			"service_location" : "",
 			"use_lda" : true,
 			"description" : "_view=alternates - support for listing available views",
-			"parent" : "SISSVoc API for ConceptSchemes",
+			"parent" : ["SISSVoc API for ConceptSchemes"],
 			"pattern" : "",
 			"register" : null,
 			"view_pattern" : "alternates",
@@ -85,25 +100,10 @@
 		"pk" : null,
 		"model" : "uriredirect.rewriterule",
 		"fields" : {
-			"service_location" : "",
-			"use_lda" : true,
-			"description" : "SISSVOC API binding for conceptSchemes, assumes a SISSVOC instance at the URI register root {root} where the URIs of terms  are based on two extra levels of register/container : {root}/{domain}/{scheme}\r\n\r\nAs an API this will have several child rules (i.e. whose parent is this rule) that define no service_location or uri_register - but define a view or other query param set.",
-			"parent" : null,
-			"pattern" : "^(?P<domain>[^\\/]+)/(?P<scheme>[^\\/]+)$",
-			"register" : null,
-			"view_pattern" : "",
-			"label" : "SISSVoc API for ConceptSchemes",
-			"view_param" : "_view",
-			"service_params" : ""
-		}
-	}, {
-		"pk" : null,
-		"model" : "uriredirect.rewriterule",
-		"fields" : {
 			"service_location" : "http://resources.opengeospatial.org:8080/dna",
 			"use_lda" : true,
 			"description" : "Local SISSVoc service endpoint binding",
-			"parent" : "SISSVoc API for Concepts",
+			"parent" : ["SISSVoc API for Concepts"],
 			"pattern" : "",
 			"register" : "voc",
 			"view_pattern" : "",
@@ -118,7 +118,7 @@
 			"service_location" : "",
 			"use_lda" : true,
 			"description" : "A sub rule view invoked when _view=skos:broader is set",
-			"parent" : "SISSVoc API for Concepts",
+			"parent" : ["SISSVoc API for Concepts"],
 			"pattern" : "",
 			"register" : null,
 			"view_pattern" : "skos:broader",
