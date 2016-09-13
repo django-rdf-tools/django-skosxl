@@ -1,12 +1,4 @@
-[ {
-		"pk" : null,
-		"model" : "rdf_io.namespace",
-		"fields" : {
-			"notes" : "Feature types",
-			"prefix" : "gazft",
-			"uri" : "http://mapstory.org/def/featuretypes/gazetteer/"
-		}
-	}, {
+[  {
 		"pk" : null,
 		"model" : "rdf_io.namespace",
 		"fields" : {
@@ -22,23 +14,7 @@
 			"prefix" : "lid",
 			"uri" : "http://id.sirf.net/def/schema/lid/"
 		}
-	}, {
-		"pk" : null,
-		"model" : "rdf_io.genericmetaprop",
-		"fields" : {
-			"definition" : "Information about rights held in and over the resource.",
-			"namespace" : "http://purl.org/dc/terms/",
-			"propname" : "rights"
-		}
-	}, {
-		"pk" : null,
-		"model" : "rdf_io.genericmetaprop",
-		"fields" : {
-			"definition" : "A related resource from which the described resource is derived.",
-			"namespace" : "http://purl.org/dc/terms/",
-			"propname" : "source"
-		}
-	}, {
+	},  {
 		"pk" : null,
 		"model" : "rdf_io.objecttype",
 		"fields" : {
@@ -199,6 +175,53 @@
 			"attr" : "semrelation(origin_concept)[rel_type='0'].target_concept"
 		}
 	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:closeMatch",
+			"is_resource" : true,
+			"attr" : "maprelation(origin_concept)[match_type='1'].uri"
+		}
+	}, {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:exactMatch",
+			"is_resource" : true,
+			"attr" : "maprelation(origin_concept)[match_type='0'].uri"
+		}
+	} , {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:broadMatch",
+			"is_resource" : true,
+			"attr" : "maprelation(origin_concept)[match_type='2'].uri"
+		}
+	},  {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:narrowMatch",
+			"is_resource" : true,
+			"attr" : "maprelation(origin_concept)[match_type='3'].uri"
+		}
+	},  {
+		"pk" : null,
+		"model" : "rdf_io.attributemapping",
+		"fields" : {
+			"scope" : "skos:Concept default",
+			"predicate" : "skos:relatedMatch",
+			"is_resource" : true,
+			"attr" : "maprelation(origin_concept)[match_type='4'].uri"
+		}
+	}, 
+	
+	{
 		"pk" : null,
 		"model" : "rdf_io.attributemapping",
 		"fields" : {

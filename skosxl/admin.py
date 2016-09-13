@@ -120,7 +120,9 @@ create_concept_command.short_description = _(u"Create concept(s) from selected l
 
 class ConceptInline(InlineAutocompleteAdmin):
     model = Concept
-    readonly_fields = ('pref_label',)
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
     fields = ('pref_label','top_concept','status')
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
