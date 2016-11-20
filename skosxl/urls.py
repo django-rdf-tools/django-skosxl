@@ -11,7 +11,7 @@ urlpatterns = patterns('skosxl.views',
     url(r'^concept/(?P<id>\d+)/$', 'concept_detail', name="concept_detail"),
     url(r'^label/(?P<slug>[\w-]+)/$', 'tag_detail', name="tag_detail"),
     
-    url(r'^sparql/$', 'sparql_query', name="sparql_query")
-    
+    url(r'^sparql/$', 'sparql_query', name="sparql_query"),
+    url(r'manage/init$', 'loadinit', name='loadinit'),
         
 )
