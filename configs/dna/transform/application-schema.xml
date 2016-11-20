@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<result format="linked-data-api"
+        href="http://localhost:8080/ftc/application-schema.xml?_page=0"
+        version="0.2">
+   <definition href="http://localhost:8080/meta/ftc/application-schema.xml"/>
+   <extendedMetadataVersion href="http://localhost:8080/ftc/application-schema.xml?_page=0&amp;_metadata=all"/>
+   <first href="http://localhost:8080/ftc/application-schema.xml?_page=0"/>
+   <isPartOf href="http://localhost:8080/ftc/application-schema.xml">
+      <definition href="http://localhost:8080/meta/ftc/application-schema.xml"/>
+      <part href="http://localhost:8080/ftc/application-schema.xml?_page=0"/>
+      <type>
+         <item href="http://purl.org/linked-data/api/vocab#ListEndpoint"/>
+      </type>
+   </isPartOf>
+   <items>
+      <item href="http://example.org/fullmoon/test-case/testas07/">
+         <hasTopConcept href="http://example.org/fullmoon/test-case/testas07/Sample">
+            <inScheme href="http://example.org/fullmoon/test-case/testas07/"/>
+         </hasTopConcept>
+         <label datatype="string">Application schema - Test AS 07</label>
+         <stereotype href="http://def.seegrid.csiro.au/isotc211/iso19103/2005/basic/applicationSchema"/>
+         <type>
+            <item href="http://www.w3.org/2004/02/skos/core#ConceptScheme"/>
+         </type>
+      </item>
+   </items>
+   <itemsPerPage datatype="long">10</itemsPerPage>
+   <page datatype="long">0</page>
+   <startIndex datatype="long">1</startIndex>
+   <type>
+      <item href="http://purl.org/linked-data/api/vocab#Page"/>
+   </type>
+</result>

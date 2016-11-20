@@ -1,0 +1,6 @@
+/* This is the last CSS loaded - you can destroy incoming formatting! */
+
+/* replace the icon near the title. */ 
+header h1 {
+    background: url("../images/molecule.jpg") no-repeat scroll 0 0 transparent;
+}

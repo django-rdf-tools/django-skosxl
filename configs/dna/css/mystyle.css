@@ -1,0 +1,16 @@
+/* This is the last CSS loaded - you can destroy incoming formatting! */
+
+/* We are replacing the banner at the top*/ 
+nav.site {
+    background: url("../images/LIDbanner.png") no-repeat scroll 0 0 transparent;
+    padding-top: 60px;
+}
+
+/* we are replacing the icon near the title. */ 
+header h1 {
+
+
+	font-size: 2em;
+
+} /*   background: url("../images/lid.png") no-repeat scroll 0 0 transparent; */
+}

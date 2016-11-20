@@ -17,6 +17,23 @@ from SPARQLWrapper import SPARQLWrapper,JSON, XML
 import pprint
 
 
+from importlib import import_module
+
+
+def loadinit(req) :
+    """
+        ought to move this to rdf_io, and put in a module register process that triggers these for all modules rdf_io knows about
+    """
+    messages = {}
+    if req.GET.get('pdb') :
+        import pdb; pdb.set_trace()
+    for cfgname in ['rdf_io_mappings', 'urls_sissvoc'] :
+        cm = import_module("".join(('skosxl.fixtures.',cfgname)), 'dataweb.fixtures')
+        messages['ns'] = cm.load_base_namespaces()
+        messages['rules'] = cm.load_urirules()
+        messages['rdf_io'] = cm.load_rdf_mappings()
+    return HttpResponse("loaded configurations:" + str(messages))  
+
 
 def sparql_query(request):
     pp = pprint.PrettyPrinter( indent = 4 )
@@ -65,7 +82,7 @@ SELECT ?label ?uri WHERE {
         except Exception,e :
             print "Caught:", e
     return HttpResponse(    json.dumps(concepts), 
-                            mimetype="application/json")
+                            content_type="application/json")
 
 
 def scheme_detail(request,slug):
@@ -92,7 +109,7 @@ def tag_detail(request,slug):
 def json_scheme_tree(request,scheme_id,admin_url):
     scheme = Scheme.objects.get(id=scheme_id)
     return HttpResponse(    scheme.json_tree(admin_url=True), 
-                            mimetype="application/json")
+                            content_type="application/json")
 
 def tag_list(request):
     context = {}
