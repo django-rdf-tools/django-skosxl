@@ -50,8 +50,8 @@ def create_action(scheme):
 
 class ConceptAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')
-    search_fields = ['term','pref_label','slug','definition']
-    list_display = ('term','pref_label','status','scheme','top_concept')
+    search_fields = ['term','uri','pref_label','slug','definition']
+    list_display = ('term','pref_label','uri','scheme','top_concept')
     #list_editable = ('status','term','scheme','top_concept')
     list_filter = ('scheme','status')
     change_form_template = 'admin_concept_change.html'
@@ -99,7 +99,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
         return super(ConceptAdmin, self).changelist_view(request, 
                                         extra_context={'scheme_id':scheme_id})
             
-    fieldsets = (   (_(u'Scheme'), {'fields':('term','scheme','pref_label','top_concept')}),
+    fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','top_concept')}),
                     (_(u'Meta-data'),
                     {'fields':(('definition','changenote'),'created','modified'),
                      'classes':('collapse',)}),
