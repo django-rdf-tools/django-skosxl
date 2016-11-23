@@ -3,6 +3,7 @@ from rdf_io.models import Namespace, ObjectMapping,AttributeMapping
 
 from skosxl.models import Scheme
 
+from mapstory.settings import RDFSTORE, SITEURL, RDFSERVER
 
 
 def load_base_namespaces():
@@ -20,7 +21,7 @@ def load_urirules() :
         # configs to load 
         # note we could in future possibly hit the VoiD model for the resources and bind to all the declared APIs
         #
-        defaultroot = "http://mapstory.org/def"
+        defaultroot = "".join((SITEURL,"def"))
         api_bindings = { 'ft' : [ 
             { 'root' : defaultroot, 'apilabel' : "API - default redirects for register root", 'pattern' : None , 'term' : 'None', 'ldamethod' : 'skos/resource' } ,
             { 'root' : defaultroot, 'apilabel' : "API - default redirects for schemes", 'pattern' : '^(?P<subregister>[^/]+)$' ,  'term' : 'None' , 'ldamethod' : 'skos/resource' } ,
@@ -91,7 +92,7 @@ def load_urirules() :
                     'description' : ' : '.join((load_key ,'binding to register for ',api['apilabel'],label)) ,
                     'parent' : apirule ,
                     'register' : reg ,
-                    'service_location' :  "http://192.168.56.151:8080/dna",
+                    'service_location' :  "".join((RDFSERVER,"/dna")),
                     'service_params' : None ,
                     'pattern' : None ,
                     'use_lda' : True ,
