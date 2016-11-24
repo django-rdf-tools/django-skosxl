@@ -156,8 +156,8 @@ class SchemeMeta(models.Model):
     value = models.CharField(_(u'value'),max_length=500)
     
 class ConceptManager(models.Manager):
-    def get_by_natural_key(self, scheme, term):
-        return self.get( scheme__uri = scheme, term=term)
+    def get_by_natural_key(self, uri):
+        return self.get( uri = uri)
         
 class Concept(models.Model):
     objects = ConceptManager()
@@ -187,11 +187,11 @@ class Concept(models.Model):
                                             verbose_name=(_(u'semantic relations')))
    
     def __unicode__(self):
-        return "/".join(self.natural_key())
+        return "".join((self.term, "(", self.uri , ")" ))
     
     def natural_key(self):
-        return ( self.scheme.natural_key(), self.term, )
-    natural_key.dependencies = ['scheme']
+        return ( self.uri )
+#    natural_key.dependencies = ['scheme']
     
 
     def get_absolute_url(self):
@@ -212,7 +212,11 @@ class Concept(models.Model):
             self.pref_label = label
             #self.save(skip_name_lookup=True)
         if not self.uri:
-            self.uri = "".join((self.scheme.uri,self.slug))
+            if self.uri[:-1] in ('#','/') :
+                sep = self.uri[:-1]
+            else:
+                sep = '/'
+            self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
     def get_narrower_concepts(self):
         childs = []
