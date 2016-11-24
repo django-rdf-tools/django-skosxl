@@ -1,0 +1,127 @@
+###############################################################
+#
+# This file defines a set of assertions relvant to a dataset compatible with Linked Data standards and containning a set of stable identifiers. 
+# such datasets are typically indexes of a dataset resource either not accessible online or available online in an incompatible form.
+#
+# LID (Linked IDentifier) behaviour provides for canonical metadata of registration provenance (set membership) and type, as well as a means to discover available representations (including non-RDF resources).
+#
+# The inheritable behaviour declarations of a generalised URI set is described using VOID
+#
+# This file assumes an ELDA or equivalent LDA implementation providing a base set of available resources for each object, which may be extended for specific data sets with additional assertions about available resources using the vocabularies defined here.
+#
+
+# Author: Rob Atkinson, CSIRO
+# 
+#
+# Copyright (c) CSIRO 2012
+# Re-use permitted according to Creative Commons Attribution 3.0 Australia (CC BY 3.0)
+# see <http://creativecommons.org/licenses/by/3.0/au/>
+#
+# Contact: Robert A Atkinson
+#          CSIRO Land and Water
+#          Australia
+#          rob.atkinson "at" csiro.au
+#
+##############################################################
+#
+## Common prefixes - don't change these.
+
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix wv: <http://vocab.org/waiver/terms/norms> .        
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#> .
+
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+
+
+@prefix lid: <http://id.sirf.net/def/schema/lid/> .
+
+
+# TODO:
+# 
+# inherited and inverse properites generated
+# 
+
+# define unsdi gazetteers as a special type of void:dataset, inheriting certain functional properties
+
+lid:lidset a rdfs:Class, owl:Class;
+    rdfs:label "lidset";
+    rdfs:comment "A collection of URIs that act as stable self-describing identifiers";
+    rdfs:subClassOf void:Dataset ;
+    
+    # properties that will be inherited by all instances through inferencing.
+    
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom lid:LIDContentLinks ;
+     ]  ;
+     
+         rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom lid:LIDview ;
+     ]  ;
+     
+    
+#    rdfs:seeAlso link to LID specification online
+     .
+   
+
+lid:LDAViewer a rdfs:Class, owl:Class;
+    rdfs:subClassOf void:TechnicalFeature ;
+    rdfs:label "support for a view (i.e. information model of a resource) in the sense of Linked Data API ";
+    rdfs:comment "Provides for inferencing that any LID dataset supports a minimal set of API entry points";
+    # default formats available for this view - others may be declared for a specific 
+    dcterms:hasFormat <http://purl.org/NET/mediatypes/application/rdf+xml>, 
+                            <http://purl.org/NET/mediatypes/text/html>, 
+                            <http://purl.org/NET/mediatypes/application/json>, 
+                            <http://purl.org/NET/mediatypes/application/rdf+ttl> ,
+                        <http://purl.org/NET/mediatypes/application/xml>;
+    #    rdfs:seeAlso <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#>;
+    .
+
+#tokens we can use in LDA API
+<http://purl.org/NET/mediatypes/application/rdf+xml>
+    lid:filext ".rdf" ;
+    lid:ldatoken "rdf"
+    .
+
+<http://purl.org/NET/mediatypes/application/xml>
+    lid:filext ".xml" ;
+    lid:ldatoken "xml"
+    .
+    
+<http://purl.org/NET/mediatypes/text/html>
+    lid:filext ".html" ;
+    lid:ldatoken "html"
+    .
+
+<http://purl.org/NET/mediatypes/application/rdf+ttl>
+    lid:filext ".ttl" ;
+    lid:ldatoken "ttl"
+    .
+<http://purl.org/NET/mediatypes/application/json>
+    lid:filext ".json" ;
+    lid:ldatoken "json"
+    .
+    
+lid:LIDview a lid:LDAViewer  ;
+    rdfs:label "Default description view of identified object";
+    rdfs:comment "This view supports the LID standard - providing a well known view to discover item definition, provenance and additional resources";
+    lid:viewName    "lid" ;
+#    rdfs:seeAlso <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#>;
+    .
+
+lid:LIDContentLinks a lid:LDAViewer  ;
+    rdfs:label "lists available information resources for a concept identifer";
+    rdfs:comment "Necessary to meet the LID contract. May include a recursive link to one or more lists of resources";
+    lid:viewName "alternates" ;
+#    rdfs:seeAlso <http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#>;
+    .
+ 
