@@ -43,7 +43,7 @@ def load_rdf_mappings():
     (object_type,created) = ObjectType.objects.get_or_create(uri="qb:CodedProperty", defaults = { "label" : "RDF Datacube Coded Property" })
 
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
-    pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "term", "scheme.uri" )
+    pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:inScheme", is_resource=True).save()    
     #labels
