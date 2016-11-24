@@ -123,7 +123,7 @@ class ConceptInline(InlineAutocompleteAdmin):
 #    list_fields = ('pref_label', )
     show_change_link = True
     max_num = 20
-    fields = ('pref_label','top_concept','status')
+    fields = ('term','pref_label','top_concept','status')
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 0

@@ -17,7 +17,8 @@ from django.core.urlresolvers import reverse
 # update this to use customisable setting
 # from django.contrib.auth.models import User
 from django.conf import settings
-
+from django.db.models.signals import post_save
+        
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
 from rdf_io.models import Namespace, GenericMetaProp
@@ -165,7 +166,7 @@ class Concept(models.Model):
     term = models.CharField(_(u'term'),blank=True,null=True,max_length=255)
     # not sure we will need this - SKOS names should enforce slug compatibility.
     slug        = exfields.AutoSlugField(populate_from=('term'))
-    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,max_length=255)
+    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
 
     
     definition  = models.TextField(_(u'definition'), blank=True)
@@ -201,6 +202,8 @@ class Concept(models.Model):
         return reverse('concept_detail', args=[self.id])
         
     def save(self,skip_name_lookup=False, *args, **kwargs):
+        if not self.term:
+            raise ValidationError("Term must be present")
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
         if not skip_name_lookup: #updating the pref_label
@@ -208,16 +211,28 @@ class Concept(models.Model):
                 lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
                 label = lookup_label.label_text
             except Label.DoesNotExist:
-                label =  '< no label >'
+                if not self.pref_label  or self.pref_label == '< no label >' :
+                    label =  '< no label >'
+                else:
+                    label = self.pref_label
             self.pref_label = label
             #self.save(skip_name_lookup=True)
         if not self.uri:
-            if self.uri[:-1] in ('#','/') :
-                sep = self.uri[:-1]
+            if self.scheme.uri[:-1] in ('#','/') :
+                sep = self.scheme.uri[:-1]
             else:
                 sep = '/'
+            print "sep",sep,"suri",self.scheme.uri
             self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
+        #now its safe to  add new label to the concept for the prefLabel
+        if self.pref_label and not self.pref_label == '< no label >':
+            try:
+                lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
+            except Label.DoesNotExist:
+                Label.objects.create(concept=self,language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel,label_text=self.pref_label)
+                    
+        
     def get_narrower_concepts(self):
         childs = []
         if SemRelation.objects.filter(origin_concept=self,rel_type=1).exists():
@@ -245,6 +260,11 @@ class Notation(models.Model):
     namespace = models.ForeignKey(Namespace,verbose_name=_(u'namespace(type)'))
     def __unicode__(self):
         return self.code + '^^<' + self.namespace.uri + '>'  
+        
+    def save(self, *args, **kwargs):
+        self.concept.save()                
+        super(Notation, self).save()
+        
     class Meta: 
         verbose_name = _(u'SKOS notation')
         verbose_name_plural = _(u'notations')
@@ -285,17 +305,26 @@ class Label(models.Model):
     def save(self, *args, **kwargs):
 #        if not self.name :
 #            self.name = self.label_text
+#        import pdb; pdb.set_trace()
+        concept_saved = False
         if self.label_type == LABEL_TYPES.prefLabel:
-            if Label.objects.filter(concept=self.concept,
+            if Label.objects.exclude(id=self.id).filter( concept=self.concept,
                                              label_type=LABEL_TYPES.prefLabel,
                                              language=self.language
                                              ).exists():
                 raise ValidationError(_(u'There can be only one preferred label by language'))
-            if not self.concept.pref_label or self.concept.pref_label == '<no label>' :
+
+         
+        super(Label, self).save()
+        # have to update concept's prefLabel to match _after_ label is save - otherwise it gets overwritten
+        if self.label_type == LABEL_TYPES.prefLabel and self.language == DEFAULT_LANG:
+            if self.concept.pref_label != self.label_text :
                 self.concept.pref_label = self.label_text
                 self.concept.save()
-        super(Label, self).save()
-        
+                concept_saved = True
+        if not concept_saved :
+            post_save.send(Concept, instance=self.concept, created=False) 
+            
 #class LabelledItem(GenericTaggedItemBase):
 #    tag = models.ForeignKey(Label, related_name="skosxl_label_items")
 
