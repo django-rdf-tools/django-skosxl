@@ -3,7 +3,10 @@ from rdf_io.models import Namespace, ObjectMapping,AttributeMapping
 
 from skosxl.models import Scheme
 
-from mapstory.settings import RDFSTORE, SITEURL, RDFSERVER
+from django.conf import settings 
+RDFSTORE=settings.RDFSTORE,
+SITEURL=settings.SITEURL,
+RDFSERVER=settings.RDFSERVER
 
 
 def load_base_namespaces():
