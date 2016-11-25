@@ -163,7 +163,7 @@ class ConceptManager(models.Manager):
 class Concept(models.Model):
     objects = ConceptManager()
     # this will be the 
-    term = models.CharField(_(u'term'),blank=True,null=True,max_length=255)
+    term = models.CharField(_(u'term'),help_text=_(u'Required - must be valid SKOS term - ie. a URL-friendly QNAME - TODO include validation for this.'),blank=True,null=True,max_length=255)
     # not sure we will need this - SKOS names should enforce slug compatibility.
     slug        = exfields.AutoSlugField(populate_from=('term'))
     pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
