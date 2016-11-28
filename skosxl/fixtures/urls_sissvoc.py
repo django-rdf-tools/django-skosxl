@@ -8,15 +8,21 @@ RDFSTORE=settings.RDFSTORE,
 SITEURL=settings.SITEURL,
 RDFSERVER=settings.RDFSERVER
 
-
+try:
+    SKOSPATHS=settings.SKOSPATHS
+except:
+    SKOSPATHS=('voc',)
+    
 def load_base_namespaces():
     """
-        load namespaces for the samples
+        load namespaces for SKOS
     """
     pass
+
 def load_urirules() :
-    """
-        Load uriredirect rules for these object types.
+    """Load uriredirect rules for these object types.
+        
+    These rules are based on the SISSVOC API - a Linked Data API configuration for SKOS content    
     """
     try:
         __import__('uriredirect')
@@ -24,16 +30,18 @@ def load_urirules() :
         # configs to load 
         # note we could in future possibly hit the VoiD model for the resources and bind to all the declared APIs
         #
-        defaultroot = "".join((SITEURL,"def"))
-        api_bindings = { 'ft' : [ 
+        try:
+            defaultroot = "".join((SITEURL,"def"))
+        except:
+            defaultroot = "".join((SITEURL[0],"def"))
+        api_bindings={}   
+        for root in SKOSPATHS :
+       
+            api_bindings[root] = [ 
             { 'root' : defaultroot, 'apilabel' : "API - default redirects for register root", 'pattern' : None , 'term' : 'None', 'ldamethod' : 'skos/resource' } ,
             { 'root' : defaultroot, 'apilabel' : "API - default redirects for schemes", 'pattern' : '^(?P<subregister>[^/]+)$' ,  'term' : 'None' , 'ldamethod' : 'skos/resource' } ,
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for concepts", 'pattern' : '^.*/(?P<term>[^\?]+)' , 'term' : '${term}', 'ldamethod' : 'skos/resource' } ],
-            'featuretypes' : [ 
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for register root", 'pattern' : None , 'term' : 'None' , 'ldamethod' : 'skos/resource' } ,
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for subregisters", 'pattern' : '^(?P<term>[^/]+)$' , 'term' : 'None',  'ldamethod' : 'skos/resource' } ,
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for register items", 'pattern' : '^.*/(?P<term>[^\?]+)' , 'term' : '${term}', 'ldamethod' : 'skos/resource' } ]
-            }
+            { 'root' : defaultroot, 'apilabel' : "API - default redirects for concepts", 'pattern' : '^.*/(?P<term>[^\?]+)' , 'term' : '${term}', 'ldamethod' : 'skos/resource' } ]           
+            
         load_key = 'SKOS API rule: '    
         RewriteRule.objects.filter(description__startswith=load_key).delete()   
         for label in api_bindings.keys() :
@@ -64,13 +72,13 @@ def load_urirules() :
                 for ext in ('ttl','json','rdf','xml','html') :
                     mt = MediaType.objects.get(file_extension=ext)
                     (accept,created) = AcceptMapping.objects.get_or_create(rewrite_rule=apirule,media_type=mt, defaults = {
-                        'redirect_to' : "".join(('${server}/', api['ldamethod'],'?uri=',defaultroot,'/',label,path,'&_format=',ext)) } )
+                        'redirect_to' : "".join(('${server}/', api['ldamethod'],'?uri=${uri}&_format=',ext)) } )
                 # sub rules for views
                 viewlist = [ {'name': 'alternates', 'apipath': ''.join(('lid/resourcelist','?baseuri=',api['root'],'/',label,path_base,'&item=',term))},  ]
-                if label == 'qbcomponents' :
-                    viewlist = viewlist + [ {'name': 'qb', 'apipath': ''.join(('qbcomponent','?uri=',api['root'],'/',label,'/${path}'))}, ]
-                elif label == 'profiles' :
-                    viewlist = viewlist + [ {'name': 'profile', 'apipath': ''.join(('profile','?uri=',api['root'],'/',label,'/${path}'))}, ]
+                # if label == 'qbcomponents' :
+                    # viewlist = viewlist + [ {'name': 'qb', 'apipath': ''.join(('qbcomponent','?uri=',api['root'],'/',label,'/${path}'))}, ]
+                # elif label == 'profiles' :
+                    # viewlist = viewlist + [ {'name': 'profile', 'apipath': ''.join(('profile','?uri=',api['root'],'/',label,'/${path}'))}, ]
                 for view in viewlist:
                     id = ' : '.join((label,api['apilabel'],"view",view['name']))
                     (api_vrule,created) = RewriteRule.objects.get_or_create(
