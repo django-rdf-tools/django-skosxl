@@ -47,13 +47,13 @@ def load_rdf_mappings():
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:inScheme", is_resource=True).save()    
     #labels
-    am = AttributeMapping(scope=pm, attr="label[label_type=0].label_text@language", predicate="skos:prefLabel", is_resource=False).save()
-    am = AttributeMapping(scope=pm, attr="label[label_type=1].label_text@language", predicate="skos:altLabel", is_resource=False).save()
-    am = AttributeMapping(scope=pm, attr="notation.code^^namespace.uri", predicate="skos:notation", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="labels[label_type=0].label_text@language", predicate="skos:prefLabel", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="labels[label_type=1].label_text@language", predicate="skos:altLabel", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="notations.code^^namespace.uri", predicate="skos:notation", is_resource=False).save()
     
     # semantic relations
-    am = AttributeMapping(scope=pm, attr="semrelation(origin_concept)[rel_type='1'].target_concept", predicate="skos:narrower", is_resource=True).save()
-    am = AttributeMapping(scope=pm, attr="semrelation(origin_concept)[rel_type='0'].target_concept", predicate="skos:broader", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="semrelation(origin_concept)[rel_type='1'].target_concept.uri", predicate="skos:narrower", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="semrelation(origin_concept)[rel_type='0'].target_concept.uri", predicate="skos:broader", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='1'].uri", predicate="skos:closeMatch", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='0'].uri", predicate="skos:exactMatch", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='2'].uri", predicate="skos:broadMatch", is_resource=True).save()
