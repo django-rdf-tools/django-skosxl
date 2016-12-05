@@ -30,10 +30,14 @@ def load_urirules() :
         # configs to load 
         # note we could in future possibly hit the VoiD model for the resources and bind to all the declared APIs
         #
+        sep = '/'
+        if SITEURL[:-1] == '/' :
+            sep = ''
+            
         try:
-            defaultroot = "".join((SITEURL,"def"))
+            defaultroot = sep.join((SITEURL,"def"))
         except:
-            defaultroot = "".join((SITEURL[0],"def"))
+            defaultroot = sep.join((SITEURL[0],"def"))
         api_bindings={}   
         for root in SKOSPATHS :
        
