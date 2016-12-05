@@ -100,11 +100,11 @@
         
         <H1></H1>
         <xsl:choose>
-            <xsl:when test="$objectid = '' or $objectid = 'None'">
+            <xsl:when test="$objectid = '' or $objectid = 'None' ">
                 <H1>Information resources available for <a href="{$id}" target="_blank"
             title="Go to default view of object"><xsl:value-of select="$id"/></a></H1>
             
-                    <xsl:apply-templates select="void_feature">
+                <xsl:apply-templates select="void_feature|feature">
                         <xsl:with-param name="id"><xsl:value-of select="$id"/>
                         </xsl:with-param>
                         <xsl:with-param name="scope">set</xsl:with-param>
@@ -115,14 +115,13 @@
                 <H1> Information resources available for specified
                     object: <a href="{$id}"  target="_blank"
             title="Go to default view of object"><xsl:value-of select="$id"/></a></H1>
-               <xsl:apply-templates select="void_feature">
+                <xsl:apply-templates select="void_feature|feature">
                     <xsl:with-param name="id"><xsl:value-of select="$id"/></xsl:with-param>
                     <xsl:with-param name="scope">item</xsl:with-param>
                 </xsl:apply-templates>
-                <H1>Information resources available for the
-                    containing register (dataset): <a href="{$idroot}"  target="_blank"
+                <H1>Dataset related links: <a href="{$idroot}"  target="_blank"
             title="Go to default view of dataset information"><xsl:value-of select="$idroot"/></a></H1>
-                    <xsl:apply-templates select="void_feature">
+                <xsl:apply-templates select="void_feature|feature">
                     <xsl:with-param name="id"><xsl:value-of select="$idroot"/></xsl:with-param>
                     <xsl:with-param name="scope">set</xsl:with-param>
                 </xsl:apply-templates>
@@ -132,7 +131,7 @@
 
     </xsl:template>
 
-    <xsl:template match="void_feature">
+    <xsl:template match="void_feature|feature">
         <xsl:param name="scope">set</xsl:param>
         <xsl:param name="id"/>
         <TABLE BORDER="1">
@@ -153,15 +152,15 @@
     <xsl:template match="item" mode="views">
         <xsl:param name="scope">set</xsl:param>
         <xsl:param name="id"/>
-        <xsl:variable name="view" select="lid_viewName"/>
-        <xsl:variable name="vt" select="lid_viewType/@href"/>
+        <xsl:variable name="view" select="lid_viewName|viewName"/>
+        <xsl:variable name="vt" select="viewType/@href|lid_viewType/@href"/>
         
-        <xsl:if test="(count(lid_featurescope) = 0 ) or lid_featurescope = $scope">
+        <xsl:if test="(count(lid_featurescope) + count(featurescope) = 0 ) or featurescope = $scope or lid_featurescope = $scope">
 
             <TR>
                 <TD>
                     <xsl:choose>
-                        <xsl:when test="count(lid_viewType) = 1" >
+                        <xsl:when test="count(lid_viewType) + count(viewType) = 1" >
                             <a href="{$vt}"  target="_blank"
             title="{$vt}">
                                 <xsl:value-of select="$view"/>
@@ -208,6 +207,7 @@
                 </xsl:with-param>
                 <xsl:with-param name="format">
                     <xsl:value-of select="key('format_single', @href)/lid_ldatoken"/>
+                    <xsl:value-of select="key('format_single', @href)/ldatoken"/>
                 </xsl:with-param>
             </xsl:call-template>
         </xsl:if>
@@ -233,6 +233,7 @@
             </xsl:with-param>
             <xsl:with-param name="format">
                 <xsl:value-of select="key('formats', @href)/lid_ldatoken"/>
+                <xsl:value-of select="key('formats', @href)/ldatoken"/>
             </xsl:with-param>
         </xsl:call-template>
     </xsl:template>

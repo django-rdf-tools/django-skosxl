@@ -64,11 +64,11 @@ lid:lid a api:API;
     api:defaultFormatter [
         a api:XsltFormatter;
         api:name "html";
-        api:stylesheet "lda-assets/resources/dna/transform/make_lids-new.xsl";
+        api:stylesheet "lda-assets/resources/dna/transform/make_lids.xsl";
         api:mimeType "text/html";
     ];
 
-    api:variable [api:name "webapp"; api:value "/sissvoc"];
+    api:variable [api:name "webapp"; api:value "/dna"];
     api:variable
         [api:name "SISSDefaultResourceDirBase"; api:value "{webapp}/lda-assets/resources/siss-default/"],
         [api:name "myResourceDirBase"; api:value "{webapp}/lda-assets/resources/dna/"],
