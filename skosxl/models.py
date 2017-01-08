@@ -185,8 +185,14 @@ class Concept(models.Model):
     top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
     sem_relations = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
-                                            verbose_name=(_(u'semantic relations')))
-   
+                                            verbose_name=(_(u'Semantic relations')),
+                                            help_text=_(u'SKOS semantic relations are links between SKOS concepts, where the link is inherent in the meaning of the linked concepts.'))
+    # map_relations = models.OneToManyField( "self",symmetrical=False,
+                                            # through='MapRelation',
+                                            # verbose_name=(_(u'semantic relations'))
+                                            # ,
+                                            # help_text=_(u'These properties are used to state mapping (alignment) links between SKOS concepts in different concept schemes'))
+                                            
     def __unicode__(self):
         return "".join((self.term, "(", self.uri , ")" ))
     
@@ -351,7 +357,7 @@ class SemRelation(models.Model):
     class Meta: 
         verbose_name = _(u'Semantic relation')
         verbose_name_plural = _(u'Semantic relations')
-        
+
     def save(self,skip_inf=False, *args, **kwargs):
         if not skip_inf:
             if self.rel_type in reverse_map :
@@ -386,5 +392,6 @@ class MapRelation(models.Model):
     class Meta: 
         verbose_name = _(u'Mapping relation')
         verbose_name_plural = _(u'Mapping relations')
+
 #     
 
