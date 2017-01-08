@@ -40,7 +40,7 @@ def load_rdf_mappings():
     # this needs further testing - especially about resource vs literal values.
     #am = AttributeMapping(scope=pm, attr="schememeta.value", predicate="schememeta.metaprop", is_resource=False).save()
   
-    (object_type,created) = ObjectType.objects.get_or_create(uri="qb:CodedProperty", defaults = { "label" : "RDF Datacube Coded Property" })
+    #(object_type,created) = ObjectType.objects.get_or_create(uri="qb:CodedProperty", defaults = { "label" : "RDF Datacube Coded Property" })
 
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
     pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
