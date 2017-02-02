@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-skosxl\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-01-07 14:51+0000\n"
+"POT-Creation-Date: 2017-02-02 15:31+0100\n"
 "PO-Revision-Date: 2012-01-07 15:51+0100\n"
 "Last-Translator: Dominique Guardiola <dguardiola@quinode.fr>\n"
 "Language-Team: Quinode <dguardiola@quinode.fr>\n"
@@ -19,235 +19,340 @@ msgstr ""
 "X-Poedit-Language: French\n"
 "X-Poedit-Country: FRANCE\n"
 
-#: admin.py:38
+#: skosxl/admin.py:48
 #, python-format
 msgid "Make selected concept part of the \"%s\" scheme"
 msgstr "Rattacher les concepts sélectionnés au schéma \"%s\""
 
-#: admin.py:48
+#: skosxl/admin.py:102
 msgid "Scheme"
 msgstr "Schéma"
 
-#: admin.py:49
+#: skosxl/admin.py:103
 msgid "Meta-data"
 msgstr "Méta-données"
 
-#: admin.py:62
+#: skosxl/admin.py:118
 msgid "Create concept(s) from selected label(s)"
 msgstr "Créer des concepts à partir des tags sélectionnés"
 
-#: models.py:20
+#: skosxl/models.py:30
 msgid "preferred"
 msgstr "préféré"
 
-#: models.py:21
+#: skosxl/models.py:31
 msgid "alternative"
 msgstr "alternatif"
 
-#: models.py:22
+#: skosxl/models.py:32
 msgid "hidden"
 msgstr "masqué"
 
-#: models.py:28
+#: skosxl/models.py:38
 msgid "has a broader concept"
 msgstr "a pour concept plus large"
 
-#: models.py:29
+#: skosxl/models.py:39
 msgid "has a narrower concept"
 msgstr "a comme concept plus précis"
 
-#: models.py:30
+#: skosxl/models.py:40
 msgid "has a related concept"
 msgstr "a une relation avec"
 
-#: models.py:42
+#: skosxl/models.py:52
 msgid "matches exactly"
 msgstr "correspond exactement à"
 
-#: models.py:43
+#: skosxl/models.py:53
 msgid "matches closely"
 msgstr "est assez proche de"
 
-#: models.py:44
+#: skosxl/models.py:54
 msgid "has a broader match"
 msgstr "a une signification plus large que"
 
-#: models.py:45
+#: skosxl/models.py:55
 msgid "has a narrower match"
 msgstr "a une signification plus précise que"
 
-#: models.py:46
+#: skosxl/models.py:56
 msgid "has a related match"
-msgstr "e une relation avec"
+msgstr "a une relation avec"
 
-#: models.py:51
+#: skosxl/models.py:61
 msgid "French"
 msgstr "Français"
 
-#: models.py:52
+#: skosxl/models.py:62
+msgid "German"
+msgstr "Allemand"
+
+#: skosxl/models.py:63
 msgid "English"
 msgstr "Anglais"
 
-#: models.py:53
+#: skosxl/models.py:64
 msgid "Spanish"
 msgstr "Espagnol"
 
-#: models.py:54
+#: skosxl/models.py:65
 msgid "Italian"
 msgstr "Italien"
 
-#: models.py:55
+#: skosxl/models.py:66
 msgid "Portuguese"
 msgstr "Portugais"
 
-#: models.py:61
+#: skosxl/models.py:72
 msgid "Active"
 msgstr "Actif"
 
-#: models.py:62
+#: skosxl/models.py:73
 msgid "Draft"
 msgstr "Brouillon"
 
-#: models.py:63
+#: skosxl/models.py:74
 msgid "Double"
 msgstr "Doublon"
 
-#: models.py:64
+#: skosxl/models.py:75
 msgid "Dispute"
 msgstr "Désaccord"
 
-#: models.py:65
+#: skosxl/models.py:76
 msgid "Not classified"
 msgstr "pas trié"
 
-#: models.py:71
-#: models.py:94
-msgid "preferred label"
-msgstr "libellé préféré"
-
-#: models.py:73
-#: models.py:91
-#: models.py:92
-#: models.py:125
-msgid "main URI"
-msgstr "URI"
-
-#: models.py:74
-#: models.py:85
-#: models.py:126
-msgid "created"
-msgstr "date de création"
-
-#: models.py:75
-#: models.py:86
-#: models.py:127
-msgid "modified"
-msgstr "date de modification"
-
-#: models.py:81
-msgid "definition"
-msgstr "définition"
-
-#: models.py:84
-msgid "change note"
-msgstr "historique"
-
-#: models.py:87
-msgid "review status"
-msgstr "évaluation"
-
-#: models.py:90
-#: models.py:123
-msgid "django user"
-msgstr "utilisateur Django"
-
-#: models.py:96
-msgid "is top concept"
-msgstr "concept de niveau 1"
-
-#: models.py:99
-msgid "semantic relations"
-msgstr "relations sémantiques"
-
-#: models.py:122
-msgid "language"
-msgstr "langue"
-
-#: models.py:124
-msgid "author URI"
-msgstr "URI auteur"
-
-#: models.py:128
-msgid "main concept"
-msgstr "concept"
-
-#: models.py:129
-#: models.py:154
-msgid "label type"
-msgstr "type de libellé"
-
-#: models.py:137
-msgid "Created from tag \""
-msgstr "Créé à partir du tag \""
-
-#: models.py:152
+#: skosxl/models.py:89
 msgid "label"
 msgstr "libellé"
 
-#: models.py:153
-msgid "concept"
-msgstr "concept"
+#: skosxl/models.py:92 skosxl/models.py:182 skosxl/models.py:183
+msgid "main URI"
+msgstr "URI"
 
-#: models.py:158
-msgid "Label property"
-msgstr "Propriété du libellé"
+#: skosxl/models.py:93 skosxl/models.py:176 skosxl/models.py:294
+msgid "created"
+msgstr "date de création"
 
-#: models.py:159
-msgid "Label properties"
-msgstr "Propriétés de libellés"
+#: skosxl/models.py:94 skosxl/models.py:177 skosxl/models.py:295
+msgid "modified"
+msgstr "date de modification"
 
-#: models.py:171
-msgid "There can be only one preferred label by language"
-msgstr "Il ne peut y avoir d'un seul libellé préféré par concept et par langue."
+#: skosxl/models.py:95 skosxl/models.py:172
+msgid "definition"
+msgstr "définition"
 
-#: models.py:190
-msgid "Origin"
-msgstr "Origine"
+#: skosxl/models.py:96
+msgid "additional metadata"
+msgstr "Métadonnées supplémentaires"
 
-#: models.py:191
-msgid "Target"
-msgstr "Cible"
+#: skosxl/models.py:96
+msgid "(<predicate> <object> ; list) "
+msgstr "Liste <prédicat> <objet> ;"
 
-#: models.py:192
-msgid "Type of semantic relation"
-msgstr "Type de relation sémantique"
+#: skosxl/models.py:157
+msgid "value"
+msgstr "valeur"
 
-#: models.py:196
-#: models.py:197
+#: skosxl/models.py:166
+msgid "term"
+msgstr "terme"
+
+#: skosxl/models.py:166
+msgid ""
+"Required - must be valid SKOS term - ie. a URL-friendly QNAME - TODO include "
+"validation for this."
+msgstr ""
+"Requis, doit être un terme SKOS valide, c'est à dire un nom qualifié (QNAME)"
+
+#: skosxl/models.py:169
+msgid "preferred label"
+msgstr "libellé préféré"
+
+#: skosxl/models.py:169
+msgid ""
+"Will be automatically set to the preferred label in the default language - "
+"which will be automatically created using this field only if not present"
+msgstr ""
+"Sera automatiquement fixé à la valeur du label préféré dans la langue par "
+"défaut. Inversement si le label préféré est vide, il prendra cette valeur su "
+"elle est défini"
+
+#: skosxl/models.py:174
+msgid "Note - currently only membership of a single scheme supported"
+msgstr ""
+"Note : actuellement est uniquement supportée l'appartenance à un seul schéma"
+
+#: skosxl/models.py:175
+msgid "change note"
+msgstr "historique"
+
+#: skosxl/models.py:178
+msgid "review status"
+msgstr "évaluation"
+
+#: skosxl/models.py:181 skosxl/models.py:291
+msgid "django user"
+msgstr "utilisateur Django"
+
+#: skosxl/models.py:182
+msgid "Leave blank to inherit namespace from containing scheme"
+msgstr "Laisser vide pour hériter de l'espace de nom du schéma correspondant"
+
+#: skosxl/models.py:185
+msgid "is top concept"
+msgstr "concept de niveau 1"
+
+#: skosxl/models.py:188 skosxl/models.py:359
 msgid "Semantic relations"
 msgstr "Relations sémantiques"
 
-#: templates/admin_concept_change.html:19
+#: skosxl/models.py:189
+msgid ""
+"SKOS semantic relations are links between SKOS concepts, where the link is "
+"inherent in the meaning of the linked concepts."
+msgstr ""
+"Les relations sémantiques SKOS sont des liens entre concepts SKOS, inhérents "
+"au sens des concepts reliés."
+
+#: skosxl/models.py:264 skosxl/models.py:285
+msgid "main concept"
+msgstr "concept"
+
+#: skosxl/models.py:265
+msgid "notation"
+msgstr "notation"
+
+#: skosxl/models.py:266
+msgid "namespace(type)"
+msgstr "espace de nom (type)"
+
+#: skosxl/models.py:275
+msgid "SKOS notation"
+msgstr "notation SKOS"
+
+#: skosxl/models.py:276
+msgid "notations"
+msgstr "notations"
+
+#: skosxl/models.py:286
+msgid "label type"
+msgstr "type de libellé"
+
+#: skosxl/models.py:287
+msgid "label text"
+msgstr "libellé (texte)"
+
+#: skosxl/models.py:288
+msgid "language"
+msgstr "langue"
+
+#: skosxl/models.py:292
+msgid "author URI"
+msgstr "URI auteur"
+
+#: skosxl/models.py:306
+msgid "Created from tag \""
+msgstr "Créé à partir du tag \""
+
+#: skosxl/models.py:321
+msgid "There can be only one preferred label by language"
+msgstr ""
+"Il ne peut y avoir d'un seul libellé préféré par concept et par langue."
+
+#: skosxl/models.py:351
+msgid "Origin"
+msgstr "Origine"
+
+#: skosxl/models.py:352
+msgid "Target"
+msgstr "Cible"
+
+#: skosxl/models.py:353
+msgid "Type of semantic relation"
+msgstr "Type de relation sémantique"
+
+#: skosxl/models.py:358
+msgid "Semantic relation"
+msgstr "Relations sémantiques"
+
+#: skosxl/models.py:384
+msgid "Local concept to map"
+msgstr "Concept local à relier"
+
+#: skosxl/models.py:387
+msgid "Target Concept URI"
+msgstr "URI du concept cible"
+
+#: skosxl/models.py:389
+msgid "Type of mapping relation"
+msgstr "Type d'alignement"
+
+#: skosxl/models.py:393
+msgid "Mapping relation"
+msgstr "Alignement"
+
+#: skosxl/models.py:394 skosxl/templates/admin_concept_change.html:74
+msgid "Mapping relations"
+msgstr "Alignements"
+
+#: skosxl/templates/admin/autocomplete/fk_searchinput.html:4
+#: skosxl/templates/admin/autocomplete/inline_searchinput.html:4
+msgid "Lookup"
+msgstr "Recherche"
+
+#: skosxl/templates/admin_concept_change.html:19
 msgid "Home"
 msgstr "Accueil"
 
-#: templates/admin_concept_change.html:22
+#: skosxl/templates/admin_concept_change.html:22
 msgid "Add"
 msgstr "Ajouter"
 
-#: templates/admin_concept_change.html:44
-msgid "History"
-msgstr "Historique"
-
-#: templates/admin_concept_change.html:45
+#: skosxl/templates/admin_concept_change.html:29
+#: skosxl/templates/admin_concept_change.html:45
 msgid "View on site"
 msgstr "Voir sur le site"
 
-#: templates/admin_concept_change.html:56
+#: skosxl/templates/admin_concept_change.html:44
+msgid "History"
+msgstr "Historique"
+
+#: skosxl/templates/admin_concept_change.html:56
 msgid "Please correct the error below."
 msgid_plural "Please correct the errors below."
 msgstr[0] "Merci de corriger l'erreur suivante."
 msgstr[1] "Merci de corriger les erreurs suivantes."
+
+#: skosxl/utils/autocomplete_admin.py:420
+#: skosxl/utils/autocomplete_admin.py:534
+#: skosxl/utils/autocomplete_admin.py:654
+msgid "and"
+msgstr "et"
+
+#: skosxl/utils/autocomplete_admin.py:422
+#: skosxl/utils/autocomplete_admin.py:536
+#: skosxl/utils/autocomplete_admin.py:656
+#, python-format
+msgid ""
+"Use the left field to do %(model_name)s lookups in the fields %(field_list)s."
+msgstr ""
+"Utiliser le champ gauche pour faire des recherches de %(model_name)s dans "
+"les champs %(field_list)s."
+
+#~ msgid "semantic relations"
+#~ msgstr "relations sémantiques"
+
+#~ msgid "concept"
+#~ msgstr "concept"
+
+#~ msgid "Label property"
+#~ msgstr "Propriété du libellé"
+
+#~ msgid "Label properties"
+#~ msgstr "Propriétés de libellés"
 
 #~ msgid "Has a broader (transitive) concept"
 #~ msgstr "A pour concept plus large (transitif)"
@@ -287,21 +392,6 @@ msgstr[1] "Merci de corriger les erreurs suivantes."
 
 #~ msgid "Labels"
 #~ msgstr "Libellés"
-
-#~ msgid "Local concept to map"
-#~ msgstr "Concept local à relier"
-
-#~ msgid "Concept URI"
-#~ msgstr "URI du concept"
-
-#~ msgid "Type of mapping relation"
-#~ msgstr "Type de correspondance"
-
-#~ msgid "Mapping relation"
-#~ msgstr "Correspondance"
-
-#~ msgid "Mapping relations"
-#~ msgstr "Correspondances"
 
 #~ msgid "Preferred Label"
 #~ msgstr "Libellé préféré"
