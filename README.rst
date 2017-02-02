@@ -15,6 +15,30 @@ The goal is here is to allow free tagging of objects (folksonomy), but then regr
 The label management part of this app is built around django-taggit, in order to ease end-user input of the labels.
 The django admin site then allows an administrator to link labels to concepts and model its SKOS concept tree.
 
+Settings
+^^^^^^^^
+Default language
+""""""""""""""""
+
+To define the default language to be used for SKOS Concept and Label you can add and specify SKOSXL_DEFAULT_LANG in your project settings.py.
+For example:
+
+.. code:: python
+
+    SKOSXL_DEFAULT_LANG = 'fr'
+
+Possible values are:
+
+- 'fr' : French
+- 'de': German
+- 'en': English
+- 'es': Spanish
+- 'it': Italian
+- 'pt': Portuguese
+
+*Default value is set to English 'en'.*
+
+
 
 License
 =======
