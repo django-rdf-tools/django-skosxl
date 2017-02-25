@@ -106,7 +106,9 @@ class ConceptAdmin(FkAutocompleteAdmin):
                      )
     inlines = [   NotationInline, LabelInline, RelInline, SKOSMappingInline]
     def get_actions(self, request):
-        return dict(create_action(s) for s in Scheme.objects.all())
+        actions = super(ConceptAdmin, self).get_actions(request)
+        actions.update(dict(create_action(s) for s in Scheme.objects.all()))
+        return actions
 
 admin.site.register(Concept, ConceptAdmin)
 
@@ -136,7 +138,7 @@ class LabelAdmin(FkAutocompleteAdmin):
     #list_editable = ('name','slug')
     search_fields = ['label_text',]    
 
-admin.site.register(Label, LabelAdmin)    
+admin.site.register(Label, LabelAdmin)
 
 
 class SchemeAdmin(FkAutocompleteAdmin):
