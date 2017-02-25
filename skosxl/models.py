@@ -27,17 +27,17 @@ import json
 
 
 LABEL_TYPES = Choices(
-    ('prefLabel',    0,  u'preferred'),
-    ('altLabel',     1, u'alternative'),
-    ('hiddenLabel',  2,  u'hidden'),
+    ('prefLabel',    0,  _(u'preferred')),
+    ('altLabel',     1, _(u'alternative')),
+    ('hiddenLabel',  2,  _(u'hidden')),
 )
 
 REL_TYPES = Choices(
     # ('broaderTransitive',   0,  u'Has a broader (transitive) concept'),
     # ('narrowerTransitive',  1,  u'Has a narrower (transitive) concept'),
-    ('broader',             0,  u'has a broader concept'),
-    ('narrower',            1,  u'has a narrower concept'),
-    ('related',             2,  u'has a related concept'),    
+    ('broader',             0,  _(u'has a broader concept')),
+    ('narrower',            1,  _(u'has a narrower concept')),
+    ('related',             2,  _(u'has a related concept')),    
 )
 
 reverse_map = {   
@@ -49,11 +49,11 @@ reverse_map = {
 }
 
 MATCH_TYPES = Choices(
-    ('exactMatch',   0,  u'matches exactly'),
-    ('closeMatch',   1,  u'matches closely'),
-    ('broadMatch',   2,  u'has a broader match'),
-    ('narrowMatch',  3,  u'has a narrower match'),
-    ('relatedMatch', 4,  u'has a related match'),    
+    ('exactMatch',   0,  _(u'matches exactly')),
+    ('closeMatch',   1,  _(u'matches closely')),
+    ('broadMatch',   2,  _(u'has a broader match')),
+    ('narrowMatch',  3,  _(u'has a narrower match')),
+    ('relatedMatch', 4,  _(u'has a related match')),    
 )
 
 # TODO - allow these to be defined by the environment - or extended as needed.
@@ -66,14 +66,14 @@ LANG_LABELS = (
     ('pt',_(u'Portuguese'))
 )
 
-DEFAULT_LANG = 'en'
+DEFAULT_LANG = getattr(settings, 'SKOSXL_DEFAULT_LANG', 'en')
 
 REVIEW_STATUS = Choices(
-    ('active',  0,  u'Active'),
-    ('draft',   1,  u'Draft'),
-    ('doubled', 2,  u'Double'),
-    ('dispute', 3,  u'Dispute'),
-    ('todo',    4,  u'Not classified'),
+    ('active',  0,  _(u'Active')),
+    ('draft',   1,  _(u'Draft')),
+    ('doubled', 2,  _(u'Double')),
+    ('dispute', 3,  _(u'Dispute')),
+    ('todo',    4,  _(u'Not classified')),
 )
 
 DEFAULT_SCHEME_SLUG = 'general'
@@ -146,7 +146,8 @@ class Scheme(models.Model):
                                                     'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
                                                     #'children':[] #stop
                                                     })
-        return json.dumps(ja_tree)
+        return json.dumps(ja_tree, sort_keys=True,
+                          indent=4, separators=(',', ': '))
 
 class SchemeMeta(models.Model):
     """
@@ -285,7 +286,7 @@ class Label(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
     label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
-    language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default='fr')
+    language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default=DEFAULT_LANG)
  
     #metadata
     user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
