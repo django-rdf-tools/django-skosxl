@@ -146,7 +146,8 @@ class Scheme(models.Model):
                                                     'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
                                                     #'children':[] #stop
                                                     })
-        return json.dumps(ja_tree)
+        return json.dumps(ja_tree, sort_keys=True,
+                          indent=4, separators=(',', ': '))
 
 class SchemeMeta(models.Model):
     """
@@ -285,7 +286,7 @@ class Label(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
     label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
-    language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default='fr')
+    language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default=DEFAULT_LANG)
  
     #metadata
     user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
