@@ -22,7 +22,7 @@ The django admin site allows an administrator to link labels to concepts and mod
 
 Funky extras
 -----------
-This module can be used in conjunction with the django-rdfio module to populate an RDF store with the vocabularies. The RDF store can then perform all the reasoning to fill in all the implied transitive relationships or do other usef work.
+This module can be used in conjunction with the django-rdf-io [https://github.com/rob-metalinkage/django-rdf-io] module to populate an RDF store with the vocabularies. The RDF store can then perform all the reasoning to fill in all the implied transitive relationships or do other useful work.
 
 
 TODO
