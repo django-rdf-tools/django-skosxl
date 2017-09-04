@@ -5,7 +5,7 @@ from skosxl.models import Scheme
 
 from django.conf import settings 
 RDFSTORE=settings.RDFSTORE,
-SITEURL=settings.SITEURL,
+#SITEURL=settings.SITEURL,
 RDFSERVER=settings.RDFSERVER
 
 try:
@@ -13,13 +13,13 @@ try:
 except:
     SKOSPATHS=('voc',)
     
-def load_base_namespaces():
+def load_base_namespaces(url_base):
     """
         load namespaces for SKOS
     """
     pass
 
-def load_urirules() :
+def load_urirules(url_base) :
     """Load uriredirect rules for these object types.
         
     These rules are based on the SISSVOC API - a Linked Data API configuration for SKOS content    
@@ -31,13 +31,13 @@ def load_urirules() :
         # note we could in future possibly hit the VoiD model for the resources and bind to all the declared APIs
         #
         sep = '/'
-        if SITEURL[:-1] == '/' :
+        if url_base[:-1] == '/' :
             sep = ''
             
         try:
-            defaultroot = sep.join((SITEURL,"def"))
+            defaultroot = sep.join((url_base,"def"))
         except:
-            defaultroot = sep.join((SITEURL[0],"def"))
+            defaultroot = sep.join((url_base[0],"def"))
         api_bindings={}   
         for root in SKOSPATHS :
        

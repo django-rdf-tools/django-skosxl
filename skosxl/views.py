@@ -27,11 +27,13 @@ def loadinit(req) :
     messages = {}
     if req.GET.get('pdb') :
         import pdb; pdb.set_trace()
+    url_base = req.build_absolute_uri("/");
+    
     for cfgname in ['rdf_io_mappings', 'urls_sissvoc'] :
         cm = import_module("".join(('skosxl.fixtures.',cfgname)), 'dataweb.fixtures')
-        messages['ns'] = cm.load_base_namespaces()
-        messages['rules'] = cm.load_urirules()
-        messages['rdf_io'] = cm.load_rdf_mappings()
+        messages['ns'] = cm.load_base_namespaces(url_base=url_base)
+        messages['rules'] = cm.load_urirules(url_base=url_base)
+        messages['rdf_io'] = cm.load_rdf_mappings(url_base=url_base)
     return HttpResponse("loaded configurations:" + str(messages))  
 
 
