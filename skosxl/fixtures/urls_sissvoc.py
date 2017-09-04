@@ -120,7 +120,7 @@ def load_urirules(url_base) :
     except Exception as e:
         return "error configuring URI rules: %s" % e
 
-def load_rdf_mappings():
+def load_rdf_mappings(url_base):
     """
         load RDF mappings for SKOS XL Objects
     """

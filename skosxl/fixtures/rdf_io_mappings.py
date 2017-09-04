@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from skosxl.models import Scheme
 
 
-def load_base_namespaces():
+def load_base_namespaces(url_base):
     """
         load namespaces for the meta model
     """
@@ -20,13 +20,13 @@ def load_base_namespaces():
     Namespace.objects.get_or_create( uri='http://id.sirf.net/def/schema/lid/', defaults = { 'prefix' : 'lid' , 'notes': 'LID - allows characterisation of resources such as VoiD:technicalFeatures against Linked Data API view names' } )
     print "loading base namespaces"
     
-def load_urirules() :
+def load_urirules(url_base) :
     """
         Load uriredirect rules for these object types.
     """
     pass
 
-def load_rdf_mappings():
+def load_rdf_mappings(url_base):
     """
         load RDF mappings for SKOS XL Objects
     """
