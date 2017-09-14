@@ -18,13 +18,23 @@ from django.core.urlresolvers import reverse
 # from django.contrib.auth.models import User
 from django.conf import settings
 from django.db.models.signals import post_save
+
+from django.contrib.contenttypes.models import ContentType
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
-from rdf_io.models import Namespace, GenericMetaProp
+from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field
+from rdflib import Graph,namespace
+from rdflib.term import URIRef, Literal
 
 import json
 
+rdftype=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+concept=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
+scheme=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
+collection=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
+
+PLACEHOLDER = '< no label >'
 
 LABEL_TYPES = Choices(
     ('prefLabel',    0,  _(u'preferred')),
@@ -209,17 +219,24 @@ class Concept(models.Model):
         return reverse('concept_detail', args=[self.id])
         
     def save(self,skip_name_lookup=False, *args, **kwargs):
-        if not self.term:
-            raise ValidationError("Term must be present")
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
+        if not self.term :
+            if not self.uri:
+                raise ValidationError("Term or URI must be present")
+            try: 
+                term=self.uri[ self.uri.rindex('#')+1:]
+            except :
+                term=self.uri[ self.uri.rindex('/')+1:]
+            self.term=term
+
         if not skip_name_lookup: #updating the pref_label
             try:
                 lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
                 label = lookup_label.label_text
             except Label.DoesNotExist:
-                if not self.pref_label  or self.pref_label == '< no label >' :
-                    label =  '< no label >'
+                if not self.pref_label  or self.pref_label == PLACEHOLDER :
+                    label =  PLACEHOLDER
                 else:
                     label = self.pref_label
             self.pref_label = label
@@ -233,7 +250,7 @@ class Concept(models.Model):
             self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
         #now its safe to  add new label to the concept for the prefLabel
-        if self.pref_label and not self.pref_label == '< no label >':
+        if self.pref_label and not self.pref_label == PLACEHOLDER:
             try:
                 lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
             except Label.DoesNotExist:
@@ -264,9 +281,13 @@ class Concept(models.Model):
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
     code =  models.CharField(_(u'notation'),max_length=10, null=False)
-    namespace = models.ForeignKey(Namespace,verbose_name=_(u'namespace(type)'))
+    codetype = CURIE_Field(max_length=200,verbose_name=_(u'(datatype)'),default='xsd:string')
     def __unicode__(self):
-        return self.code + '^^<' + self.namespace.uri + '>'  
+        return self.code + '^^<' + self.codetype + '>'  
+    
+    def clean(self):
+        # TODO check prefix
+        pass
         
     def save(self, *args, **kwargs):
         self.concept.save()                
@@ -286,7 +307,7 @@ class Label(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
     label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
-    language    = models.CharField(_(u'language'),max_length=10, choices=LANG_LABELS, default=DEFAULT_LANG)
+    language    = models.CharField(_(u'language'),max_length=10, default=DEFAULT_LANG)
  
     #metadata
     user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
@@ -315,11 +336,12 @@ class Label(models.Model):
 #        import pdb; pdb.set_trace()
         concept_saved = False
         if self.label_type == LABEL_TYPES.prefLabel:
-            if Label.objects.exclude(id=self.id).filter( concept=self.concept,
-                                             label_type=LABEL_TYPES.prefLabel,
-                                             language=self.language
-                                             ).exists():
-                raise ValidationError(_(u'There can be only one preferred label by language'))
+            Label.objects.filter(concept=self.concept, label_type=LABEL_TYPES.prefLabel,language=self.language).delete()
+#            if Label.objects.exclude(id=self.id).filter( concept=self.concept,
+#                                             label_type=LABEL_TYPES.prefLabel,
+#                                             language=self.language
+#                                             ).exists():
+#                raise ValidationError(_(u'There can be only one preferred label by language'))
 
          
         super(Label, self).save()
@@ -396,3 +418,130 @@ class MapRelation(models.Model):
 
 #     
 
+class ImportedConceptScheme(ImportedResource):
+
+    target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
+    force_refresh = models.BooleanField(default=False, verbose_name=(_(u'force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
+    
+    def save(self,*args,**kwargs):  
+        # save first - to make file available
+        self.repo = None
+        super(ImportedConceptScheme, self).save(*args,**kwargs)
+        self.importScheme(self.get_graph(),self.target_scheme, self.force_refresh)
+                
+    class Meta: 
+        verbose_name = _(u'ImportedConceptScheme')
+        verbose_name_plural = _(u'ImportedConceptScheme')
+
+    def importScheme(self,gr, target_scheme, force_refresh):
+        """ Import a concept scheme from a parsed RDF graph 
+        
+        Uses generic RDF graph management to avoid having to do consistency checks and resource management here.
+        Will generate the target ConceptScheme if not present.
+        Push to triple store is via the post_save triggers and RDF_IO mappings if defined.
+        """
+        if not gr:
+            raise Exception ( _(u'No RDF graph available for resource'))
+        
+        target_map_scheme = {
+            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef(u'http://purl.org/dc/elements/1.1/description'): { 'text_field': 'definition'} ,
+#@prefix dcterms: <http://purl.org/dc/terms/> .
+            URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept'): {'ignore': True} ,
+            }
+        target_map_concept = {
+            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf'): { 'bool_field': 'top_concept'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',0),)} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#altLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',1),)} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#hiddenLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',2),)} , 
+            URIRef(u'http://www.w3.org/2004/02/skos/core#notation'): {'related_object':'Notation', 'related_field': 'concept', 'text_field': 'code', 'datatype_field':'codetype'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#broader'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.broader),)} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#narrower'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.narrower),)} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#related'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.related),)} ,
+            URIRef(u'http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/exactMatch#'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
+        import pdb; pdb.set_trace()
+ 
+        
+        if not target_scheme:
+           for conceptscheme in gr.subjects(predicate=rdftype, object=scheme) :
+                if target_scheme :
+                    raise Exception('Multiple concept schemes found in source document - specify target first')
+                target_scheme = str(conceptscheme)
+                s = conceptscheme
+        else:
+            s = URIRef(target_scheme)
+            
+        if force_refresh :
+            Scheme.objects.filter(uri=target_scheme).delete()
+
+        (scheme_obj,new) = Scheme.objects.get_or_create(uri=target_scheme)
+        related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme)
+        scheme_obj.save()
+        # now process any related objects
+        
+        for c in gr.subjects(predicate=rdftype, object=concept):
+            url = str(c)
+            try: 
+                term=url[ url.rindex('#')+1:]
+            except :
+                term=url[ url.rindex('/')+1:]
+            (concept_obj,new) = Concept.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term)
+            related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept)
+            concept_obj.save()
+            _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects)
+            
+def _set_object_properties(gr,uri,obj,target_map) :       
+        # loop over scheme properties and set
+        related_objects = ()
+        for (p,o) in gr.predicate_objects(subject=uri) :
+            # get mapped properties
+            prop = target_map.get(p)
+            if prop:
+                if prop.get('ignore') :
+                    # print "suppressing %s"% p
+                    continue
+                actual_obj = obj #default
+                obj_type_name = prop.get('related_object')
+                if obj_type_name:
+                    related_objects += ( (p,o,obj_type_name),)
+                elif prop.get('bool_field'):
+                    setattr(obj,prop['bool_field'],True)
+                else:
+                    setattr(obj,prop['text_field'],unicode(o))
+                    print "setting ",prop['text_field'],unicode(o)
+            else:
+                # print 'General meta %s ' % p
+                continue                
+        return related_objects
+        
+def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects) :                   
+        # process all the related objects
+        for (p,o,obj_type_name) in related_objects :
+            prop = target_map.get(p)
+            try:
+                reltype = ContentType.objects.get(model=obj_type_name.lower())
+            except ContentType.DoesNotExist as e :
+                raise ValueError("Could not locate attribute or related model '{}' for predicate '{}'".format(obj_type_name, str(p)) )
+            values = { prop.get('related_field') : obj }
+            if prop.get('text_field') : 
+                values[prop['text_field']] = unicode(o) 
+            if prop.get('lang_field') :
+                values[prop.get('lang_field') ] = o.language
+            if prop.get('datatype_field') :
+                values[prop.get('datatype_field') ] = o.datatype 
+            if prop.get('object_field') :
+                # find a matching object 
+                object_prop = prop['object_field']
+                # find a way to pass in an override for this sort of specific thing if we generalised this
+                (linked_object,new) = Concept.objects.get_or_create(uri=unicode(o), scheme=obj.scheme)
+                values[object_prop] = linked_object
+            if prop.get('set_fields') :
+                for (fname,val) in prop.get('set_fields') :
+                    values[fname] = val
+                
+            (actual_obj,new)= reltype.model_class().objects.get_or_create(**values)
+            

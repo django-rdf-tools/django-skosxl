@@ -23,7 +23,7 @@ class LabelInline(InlineAutocompleteAdmin):
 class NotationInline(InlineAutocompleteAdmin):
     model = Notation
     # readonly_fields = ('slug','created')
-    fields = ('code','namespace')
+    fields = ('code','codetype')
     # related_search_fields = {'label' : ('name','slug')}
     extra=1    
     
@@ -147,6 +147,9 @@ class SchemeAdmin(FkAutocompleteAdmin):
   
 admin.site.register(Scheme, SchemeAdmin)
 
+class ImportedConceptSchemeAdmin(admin.ModelAdmin):
+    pass
 
+admin.site.register(ImportedConceptScheme, ImportedConceptSchemeAdmin)
 
 
