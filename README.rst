@@ -18,17 +18,19 @@ Data translation exercises typically need to translate both schemas and content 
 
 The label management part of this app was originally built around django-taggit, in order to ease end-user input of the labels. The goal is here is to allow free tagging of objects (folksonomy), but then regroup similar terms into common concepts.  This dependency has currently been removed however, pending emergence of a clear standard for hierarchical tag management.
 
-The django admin site allows an administrator to link labels to concepts and model its SKOS concept tree.
+The django admin site allows an administrator to link labels to concepts and model its SKOS concept tree. 
 
 Funky extras
 -----------
-This module can be used in conjunction with the django-rdf-io [https://github.com/rob-metalinkage/django-rdf-io] module to populate an RDF store with the vocabularies. The RDF store can then perform all the reasoning to fill in all the implied transitive relationships or do other useful work.
+This module can be used in conjunction with the django-rdf-io [https://github.com/rob-metalinkage/django-rdf-io] module to populate an RDF store with the vocabularies. The RDF store (or potentially another helper managed by the rdf_io module) can then perform all the reasoning to fill in all the implied transitive relationships or do other useful work. 
 
+Bulk import of RDF SKOS files is now handled via RDF_IO module, extended by the SKOSXL.ImportedConceptScheme object.  
 
 TODO
 ----
 The user interface is still very crude - better visualisation, browse, search and validation.
-Bulk import of RDF SKOS files 
+
+Of course - see and contribute to the issues list :-)
 
 Settings
 ^^^^^^^^
@@ -52,6 +54,8 @@ Possible values are:
 - 'pt': Portuguese
 
 *Default value is set to English 'en'.*
+
+TODO: generalise this to all the languages supported by Django
 
 
 
