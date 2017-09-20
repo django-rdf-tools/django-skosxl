@@ -219,6 +219,7 @@ class Concept(models.Model):
         return reverse('concept_detail', args=[self.id])
         
     def save(self,skip_name_lookup=False, *args, **kwargs):
+#        import pdb; pdb.set_trace()
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
         if not self.term :
@@ -280,7 +281,7 @@ class Concept(models.Model):
 
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
-    code =  models.CharField(_(u'notation'),max_length=10, null=False)
+    code =  models.CharField(_(u'notation'),max_length=100, null=False)
     codetype = CURIE_Field(max_length=200,verbose_name=_(u'(datatype)'),default='xsd:string')
     def __unicode__(self):
         return self.code + '^^<' + self.codetype + '>'  
@@ -421,14 +422,21 @@ class MapRelation(models.Model):
 class ImportedConceptScheme(ImportedResource):
 
     target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
+    force_bulk_only = models.BooleanField(default=False, verbose_name=(_(u'bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
     force_refresh = models.BooleanField(default=False, verbose_name=(_(u'force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
     
     def save(self,*args,**kwargs):  
         # save first - to make file available
-        self.repo = None
-        super(ImportedConceptScheme, self).save(*args,**kwargs)
-        self.importScheme(self.get_graph(),self.target_scheme, self.force_refresh)
-                
+#        import pdb; pdb.set_trace()
+        if not self.force_bulk_only :
+            target_repo = self.target_repo
+            self.target_repo = None
+            super(ImportedConceptScheme, self).save(*args,**kwargs)
+            self.target_repo = target_repo
+        else:
+            super(ImportedConceptScheme, self).save(*args,**kwargs)
+        scheme_obj = self.importScheme(self.get_graph(),self.target_scheme, self.force_refresh)
+        
     class Meta: 
         verbose_name = _(u'ImportedConceptScheme')
         verbose_name_plural = _(u'ImportedConceptScheme')
@@ -463,7 +471,6 @@ class ImportedConceptScheme(ImportedResource):
             URIRef(u'http://www.w3.org/2004/02/skos/core#related'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.related),)} ,
             URIRef(u'http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos/exactMatch#'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
-        import pdb; pdb.set_trace()
  
         
         if not target_scheme:
@@ -493,7 +500,9 @@ class ImportedConceptScheme(ImportedResource):
             related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept)
             concept_obj.save()
             _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects)
-            
+        
+        return scheme_obj
+        
 def _set_object_properties(gr,uri,obj,target_map) :       
         # loop over scheme properties and set
         related_objects = ()

@@ -49,7 +49,7 @@ def load_rdf_mappings(url_base):
     #labels
     am = AttributeMapping(scope=pm, attr="labels[label_type=0].label_text@language", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="labels[label_type=1].label_text@language", predicate="skos:altLabel", is_resource=False).save()
-    am = AttributeMapping(scope=pm, attr="notations.code^^namespace.uri", predicate="skos:notation", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="notations.code^^codetype", predicate="skos:notation", is_resource=False).save()
     
     # semantic relations
     am = AttributeMapping(scope=pm, attr="semrelation(origin_concept)[rel_type='1'].target_concept.uri", predicate="skos:narrower", is_resource=True).save()
