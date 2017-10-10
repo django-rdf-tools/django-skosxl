@@ -32,19 +32,19 @@ def load_urirules(url_base) :
         #
         sep = '/'
         if url_base[:-1] == '/' :
-            sep = ''
+            url_base =  url_base[0:-1]
             
         try:
-            defaultroot = sep.join((url_base,"def"))
+            defaultroot = sep.join((url_base,"def","skos"))
         except:
-            defaultroot = sep.join((url_base[0],"def"))
+            defaultroot = sep.join((url_base[0],"def","skos"))
         api_bindings={}   
         for root in SKOSPATHS :
        
             api_bindings[root] = [ 
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for register root", 'pattern' : None , 'term' : 'None', 'ldamethod' : 'skos/resource' } ,
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for schemes", 'pattern' : '^(?P<subregister>[^/]+)$' ,  'term' : 'None' , 'ldamethod' : 'skos/resource' } ,
-            { 'root' : defaultroot, 'apilabel' : "API - default redirects for concepts", 'pattern' : '^.*/(?P<term>[^\?]+)' , 'term' : '${term}', 'ldamethod' : 'skos/resource' } ]           
+            { 'root' : defaultroot, 'apilabel' : "API - default redirects for register root", 'pattern' : None , 'term' : 'None', 'ldamethod' : 'resource' } ,
+            { 'root' : defaultroot, 'apilabel' : "API - default redirects for schemes", 'pattern' : '^(?P<subregister>[^/]+)$' ,  'term' : 'None' , 'ldamethod' : 'resource' } ,
+            { 'root' : defaultroot, 'apilabel' : "API - default redirects for concepts", 'pattern' : '^.*/(?P<term>[^\?]+)' , 'term' : '${term}', 'ldamethod' : 'resource' } ]           
             
         load_key = 'SKOS API rule: '    
         RewriteRule.objects.filter(description__startswith=load_key).delete()   
