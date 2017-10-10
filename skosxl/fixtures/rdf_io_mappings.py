@@ -61,7 +61,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='4'].uri", predicate="skos:relatedMatch", is_resource=True).save()
  
     
-    pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme", "term", "scheme.uri" )
+    pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme", "uri", "uri" )
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf", is_resource=True).save()
     
     
