@@ -16,17 +16,19 @@
 skos:Concept a owl:Class;
 	# spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles
 	spin:rule [ 
-	     a sp:Construct ;
+	     a sp:Modify ;
 	     rdfs:label "makes narrower as inverse of broader"@en;
 	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
 	     sp:text """
 		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 			 PREFIX service: <http://localhost/services/>
-		     CONSTRUCT {		    
-		    	?B skos:narrower ?this .
-				?this skos:broaderTransitive ?B .
-				}
+		     INSERT  {	
+ 				GRAPH ?this {		     
+		    		?B skos:narrower ?this .
+					?this skos:broaderTransitive ?B .
+					}
+			 }
 			 WHERE {
 				?mainrepo a service:Repo  .
 				OPTIONAL { ?this skos:broader ?B . }
@@ -40,17 +42,19 @@ skos:Concept a owl:Class;
 	    ]  ;
 
 	spin:rule [ 
-	     a sp:Construct ;
+	     a sp:Modify ;
 	     rdfs:label "makes broader as inverse of narrower"@en;
 	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
 	     sp:text """
 		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 			 PREFIX service: <http://localhost/services/>
-		     CONSTRUCT {		    
-		    	?B skos:broader ?this .
-				?B skos:broaderTransitive ?this .
-				}
+		     INSERT  {	
+ 				GRAPH ?this {		    
+			    	?B skos:broader ?this .
+					?B skos:broaderTransitive ?this .
+					}
+			 }
 			 WHERE {
 				?mainrepo a service:Repo  .
 				OPTIONAL { ?this skos:narrower ?B . }
@@ -63,51 +67,7 @@ skos:Concept a owl:Class;
 			""" ;
 	    ]  ;
 
-		spin:rule [ 
-	     a sp:Construct ;
-	     rdfs:label "makes broaderTransitive"@en;
-	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
-	     sp:text """
-		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-			 PREFIX service: <http://localhost/services/>
-		     CONSTRUCT {
-		    	?A skos:broaderTransitive ?C  .	    	
-		    	?A skos:broaderTransitive ?B .
-		    	?B skos:broaderTransitive ?C  .
-		    	?B skos:narrower ?A .
-		    	?C skos:narrower ?B .
-		    	?B skos:narrowerTransitive ?A .
-		    	?C skos:narrowerTransitive ?B .
-		    	?C skos:narrowerTransitive ?A .
 
-				}
-			 WHERE {
-				?mainrepo a service:Repo  .
-
-				?A a skos:Concept .
-				OPTIONAL { ?A skos:broader ?B . }
-				OPTIONAL { ?B skos:narrower ?A }
-				OPTIONAL { SERVICE ?mainrepo
-						{
-							OPTIONAL { ?A skos:broader ?B . }
-							OPTIONAL { ?B skos:narrower ?A . }
-
-						}
-					}
-				OPTIONAL { ?B skos:broader ?C . }
-				OPTIONAL { ?C skos:narrower ?B }
-				OPTIONAL { SERVICE ?mainrepo
-						{
-							OPTIONAL { ?B skos:broader ?C . }
-							OPTIONAL { ?C skos:narrower ?B . }
-
-						}
-					}
-				
-				}
-			""" ;
-	    ]  ;
 		spin:rule [ 
 	     a sp:Modify ;
 	     rdfs:label "hasTopConcept"@en;
@@ -117,7 +77,7 @@ skos:Concept a owl:Class;
 		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 			 PREFIX service: <http://localhost/services/>
 		 	INSERT {
-		 	    GRAPH service:frog {
+		 	    GRAPH ?this {
 		    	?this skos:topConceptOf ?S  .
 				?S skos:hasTopConcept ?this .
 				} }
@@ -139,22 +99,24 @@ skos:Concept a owl:Class;
 .
 
 skos:ConceptScheme  spin:rule [ 
-	     a sp:Construct ;
+	     a sp:Modify ;
 	     rdfs:label "hasTopConcept"@en;
 	     rdfs:comment "spin rule to entail skos:hasTopConcept"@en ;
 	     sp:text """
 		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 			 PREFIX service: <http://localhost/services/>
-		     CONSTRUCT {
-		    	?S skos:hasTopConcept ?A  .
+		     INSERT {
+		        GRAPH ?this {
+		    		?this skos:hasTopConcept ?A  .\
+		    		}
 				}
 			WHERE {
 				?mainrepo a service:Repo  .
 				SERVICE ?mainrepo
 				{
 					?A a skos:Concept .
-					?A skos:topConceptOf ?S .
+					?A skos:topConceptOf ?this .
 				}
 			}
 			""" ;

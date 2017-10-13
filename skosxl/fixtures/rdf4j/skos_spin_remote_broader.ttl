@@ -1,0 +1,55 @@
+@base <http://www.w3.org/2004/02/skos/core>.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix dct: <http://purl.org/dc/terms/>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+
+@prefix sp: <http://spinrdf.org/sp#> .
+@prefix spin: <http://spinrdf.org/spin#> .
+@prefix spl: <http://spinrdf.org/spl#> .
+
+# spin rules for SKOS closures
+skos:Concept a owl:Class;
+	# spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles
+
+	spin:rule [ 
+	     a sp:Modify ;
+	     rdfs:label "makes broader as inverse of narrower"@en;
+	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
+	     sp:text """
+		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			 PREFIX service: <http://localhost/services/>
+		     INSERT { GRAPH ?this  {		    
+		    	?this skos:broaderTransitive ?C  .
+	    	
+#		    	?this skos:broaderTransitive ?B .
+#		    	?B skos:broaderTransitive ?C  .
+#		    	?B skos:narrowerTransitive ?A .
+#		    	?C skos:narrowerTransitive ?B .
+#		    	?C skos:narrowerTransitive ?A .
+             
+				}
+			 }
+			 WHERE {
+				?mainrepo a service:Repo  .
+
+				OPTIONAL { ?this skos:broader ?B . OPTIONAL { ?B skos:broader ?C .} }
+				OPTIONAL { ?B skos:narrower ?this . OPTIONAL { ?C skos:narrower ?B }  }
+
+				OPTIONAL { SERVICE ?mainrepo
+						{
+							OPTIONAL { ?this skos:broader ?B . OPTIONAL { ?B skos:broader ?C . }}
+							OPTIONAL { ?this skos:broaderTransitive ?C . }
+						}
+					}
+				
+			}
+			""" ;
+	    ]  ;
+
+.
