@@ -6,14 +6,13 @@
 
 <div id="title" class="grid_12 grid">
 {% block title %}<h3>SKOS Scheme : {{object}}</h3>{% endblock %}
-    <p>Ajouté le {{object.created|date:'l t F Y'}} par {{object.user}}</p>
+    <p><a href="{{ object.uri }}">{{ object.uri }}</a></p>
     <br/>
 </div>
 
 {% block content %}
 <div id="content">
-    <div class="grid_4 grid">
-        
+    <div class="grid_4 grid">    
         
     {% if concepts %}
         <h4>Concept</h4>

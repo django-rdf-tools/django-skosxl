@@ -1,6 +1,6 @@
 # # -*- coding:utf-8 -*-
 from django.shortcuts import render_to_response, redirect
-from skosxl.models import Label,Concept
+from skosxl.models import *
 from django.template import RequestContext
 from django.shortcuts import get_object_or_404
 # deprecated since 1.3
@@ -88,14 +88,18 @@ SELECT ?label ?uri WHERE {
 
 def scheme_detail(request,slug):
     context = {}
-    scheme = Scheme.objects.get(slug=slug)
+#    import pdb; pdb.set_trace()
+    scheme = Scheme.objects.get(id=slug)
     context['object'] = scheme
     context['concepts'] = Concept.objects.filter(scheme=scheme)
     return render_to_response('scheme_detail.html',context,RequestContext(request))
 
 def concept_detail(request,id):
+    concept= Concept.objects.get(id=id)
     context = {}
-    context['concept'] = Concept.objects.get(id=id)
+    context['object'] = Concept.objects.get(id=id)
+    context['preflabels'] = Label.preflabels.filter(concept=concept)
+    context['notations'] = Notation.objects.filter(concept=concept)
     return render_to_response('concept_detail.html',context,RequestContext(request))
 
 
