@@ -23,7 +23,7 @@ from django.contrib.contenttypes.models import ContentType
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
-from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field
+from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field
 from rdflib import Graph,namespace
 from rdflib.term import URIRef, Literal
 import itertools
@@ -173,8 +173,50 @@ class SchemeMeta(models.Model):
     scheme      = models.ForeignKey(Scheme) 
     metaprop   =  models.ForeignKey(GenericMetaProp) 
     value = models.CharField(_(u'value'),max_length=500)
+
+class ConceptRank(models.Model):
+    """ a ordered, labelled ranking and typing mechanism for Concept Hierarchies. 
     
-class ConceptManager(models.Manager):
+    The numerical ordering may be post-calculated on bulk import from broader-narrower relationships amongst ranked concepts.
+    Ranking systems are Scheme specific. """
+    scheme=models.ForeignKey(Scheme)
+    level= models.PositiveSmallIntegerField(blank=True, null=True, help_text=_(u'the depth this type of concept represents'))
+    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Label of concept'),max_length=255)
+    uri= models.URLField(_(u'definition reference'),blank=True,null=True,help_text=_(u'URI of definition'),max_length=255)
+
+    def __unicode__(self):
+        return self.pref_label
+        
+    @staticmethod
+    def calcLevels(scheme, topRank=None):
+        """ find top concepts, then traverse a sample down hierarchy using broader/narrower SemRelations 
+        
+        Need to repeat for all concepts until all ranks have been covered."""
+        if topRank:
+            topconcepts = Concept.objects.filter(scheme=scheme, rank__pref_label=topRank)
+        else:
+            topconcepts = Concept.objects.filter(scheme=scheme, top_concept=True, rank__isnull = False)
+        for topc in topconcepts:
+            if not ConceptRank.objects.filter(scheme=scheme, level__isnull=True) :
+                break
+            nextconcept = topc
+            lvl = 0
+            while nextconcept :
+                nextconcept.rank.level = lvl
+                nextconcept.rank.save()
+                lvl = lvl + 1
+                rel = SemRelation.objects.filter(origin_concept=nextconcept,rel_type=REL_TYPES.narrower).first()
+                if rel:
+                    nextconcept=rel.target_concept
+                else:    
+                    rel = SemRelation.objects.filter(target_concept=nextconcept,rel_type=REL_TYPES.broader).first()
+                    if rel:
+                        nextconcept=rel.origin_concept
+                    else:
+                        nextconcept = None
+                
+            
+class ConceptManager(models.Manager):    
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
         
@@ -191,6 +233,7 @@ class Concept(models.Model):
     definition  = models.TextField(_(u'definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
     scheme      = models.ForeignKey(Scheme, blank=True, null=True, help_text=_(u'Note - currently only membership of a single scheme supported'))
+    rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_(u'Rank (depth) of Concept in ranked hierarchy, if applicable'))
     changenote  = models.TextField(_(u'change note'),blank=True)
     created     = exfields.CreationDateTimeField(_(u'created'))
     modified    = exfields.ModificationDateTimeField(_(u'modified'))
@@ -269,8 +312,8 @@ class Concept(models.Model):
         
     def get_narrower_concepts(self):
         childs = []
-        if SemRelation.objects.filter(origin_concept=self,rel_type=1).exists():
-            for narrower in SemRelation.objects.filter(origin_concept=self,rel_type=1):
+        if SemRelation.objects.filter(origin_concept=self,rel_type=REL_TYPES.narrower).exists():
+            for narrower in SemRelation.objects.filter(origin_concept=self,rel_type=REL_TYPES.narrower):
                 childs.append(( narrower.target_concept,
                                 narrower.target_concept.get_narrower_concepts()
                                 ))
@@ -446,7 +489,10 @@ class ImportedConceptScheme(ImportedResource):
     target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
     force_bulk_only = models.BooleanField(default=False, verbose_name=(_(u'bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
     force_refresh = models.BooleanField(default=False, verbose_name=(_(u'force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
-    
+    rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_(u'property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
+    rankDepthProperty = RDFpath_Field(null=True, blank=True, max_length=1000,verbose_name=(_(u'property path of rank level ')), help_text='Property path, relative to Concept object, of rank depth(level), (integer starting with 0) if present')
+    rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_(u'property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
+    rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy')
     def save(self,*args,**kwargs):  
         # save first - to make file available
         # import pdb; pdb.set_trace()
@@ -514,7 +560,7 @@ class ImportedConceptScheme(ImportedResource):
         related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme)
         scheme_obj.save()
         # now process any related objects
-        
+        import pdb; pdb.set_trace()
         for c in self.getConcepts(s,gr):
             url = str(c)
             try: 
@@ -524,9 +570,42 @@ class ImportedConceptScheme(ImportedResource):
 
             (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term, defaults=classDefaults)
             concept_obj.skip_post_save = True
+            #
+            rankuri = None
+            rankname = None
+            rankdepth = None
+            if self.rankURIProperty :           
+                try:
+                    rankuri = self.getPathVal(gr,c,self.rankURIProperty) 
+                    # assert rankuri
+                except:
+
+                    raise ValueError ("Unable to resolve rank URI reference, if specified must be present for all Concepts")    
+            if self.rankNameProperty :
+                try:
+                    rankname = self.getPathVal(gr,c,self.rankNameProperty) 
+                    # assert rankname
+                except:
+                    raise ValueError ("Unable to resolve rank Name reference, if specified must be present for all Concepts")
+            elif rankuri :
+                rankname = rankuri.replace('#','/').split('/')[-1]
+            if self.rankDepthProperty :
+                try:
+                    rankdepth = self.getPathVal(gr,c,self.rankDepthProperty) 
+                    # assert rankdepth
+                except:
+                    raise ValueError ("Unable to resolve rank Name reference, if specified must be present for all Concepts")
+                if not rankname :
+                    rankname = str(rankdepth)
+            if rankname :    
+                concept_obj.rank, new  = ConceptRank.objects.get_or_create(scheme=scheme_obj, uri=rankuri, pref_label=rankname, level=rankdepth)
+            
+            # now all the rest of the properties
             related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept)
             concept_obj.save()
             _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
+        
+        ConceptRank.calcLevels(scheme=scheme_obj, topRank = self.rankTopName)
         
         scheme_obj.bulk_save()
         return scheme_obj
