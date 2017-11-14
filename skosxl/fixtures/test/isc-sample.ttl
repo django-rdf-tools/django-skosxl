@@ -796,6 +796,41 @@ isc:BaseAeronian
   skos:topConceptOf <http://resource.geosciml.org/classifier/ics/ischart/2014> ;
 .
 
+isc:BaseAeronian-location
+  rdf:type gm:Point ;
+  gm:position isc:BaseAeronian-position ;
+  rdfs:label "Location of Stratotype Point Base of Aeronian" ;
+.
+isc:BaseAeronian-position
+  rdf:type gm:Position ;
+  gm:coordinates "52.0300 -3.7000"^^basic:ordinates ;
+  gm:srs <http://www.opengis.net/def/crs/EPSG/0/4326> ;
+  rdfs:label "Coordinates of Location of Stratotype Point Base of Aeronian" ;
+.
+isc:BaseAeronianTime
+  rdf:type tm:Coordinate ;
+  tm:frame <http://resource.geosciml.org/classifier/cgi/geologicage/ma> ;
+  tm:value "440.8"^^xsd:float ;
+  thors:positionalUncertainty isc:BaseAeronianUncertainty ;
+.
+isc:BaseAeronianUncertainty
+  rdf:type basic:Time ;
+  basic:uom <http://www.opengis.net/def/uom/UCUM/0/Ma> ;
+  basic:value "1.2"^^xsd:float ;
+.
+isc:BaseAlbian
+  rdf:type gts:GeochronologicBoundary ;
+  rdf:type skos:Concept ;
+  tm:temporalPosition isc:BaseAlbianTime ;
+  gts:stratotype isc:SPBaseAlbian ;
+  thors:nextEra isc:Albian ;
+  thors:previousEra isc:Aptian ;
+  rdfs:label "Base of Albian"@en ;
+  skos:inScheme <http://resource.geosciml.org/classifier/ics/ischart/2014> ;
+  skos:prefLabel "Base of Albian"@en ;
+  skos:topConceptOf <http://resource.geosciml.org/classifier/ics/ischart/2014> ;
+.
+
 
 <http://resource.geosciml.org/classifierscheme/ics/ischart/2014>
   rdf:type skos:ConceptScheme ;
