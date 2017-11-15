@@ -191,7 +191,7 @@ class ConceptRank(models.Model):
     def calcLevels(scheme, topRank=None):
         """ find top concepts, then traverse a sample down hierarchy using broader/narrower SemRelations 
         
-        Need to repeat for all concepts until all ranks have been covered."""
+        Once passed down an arbitrary chain, then look for additional ranks that were not covered."""
         if topRank:
             topconcepts = Concept.objects.filter(scheme=scheme, rank__pref_label=topRank)
         else:
@@ -200,7 +200,7 @@ class ConceptRank(models.Model):
             if not ConceptRank.objects.filter(scheme=scheme, level__isnull=True) :
                 break
             nextconcept = topc
-            lvl = 0
+            lvl = 1 # 0 is the scheme itself
             while nextconcept :
                 nextconcept.rank.level = lvl
                 nextconcept.rank.save()
@@ -214,7 +214,21 @@ class ConceptRank(models.Model):
                         nextconcept=rel.origin_concept
                     else:
                         nextconcept = None
-                
+        # now look for missing ranks using broader relationships
+        missedRank = SemRelation.objects.filter(origin_concept__rank__level__isnull=False, target_concept__rank__level__isnull=True, rel_type=REL_TYPES.broader).first()        
+        while missedRank :
+            missedRank.target_concept.rank.level = missedRank.origin_concept.rank.level + 1
+            missedRank.target_concept.rank.save()
+            missedRank = SemRelation.objects.filter(origin_concept__rank__level__isnull=False, target_concept__rank__level__isnull=True, rel_type=REL_TYPES.broader).first()        
+        
+       # now look for missing ranks using broader relationships
+        missedRank = SemRelation.objects.filter(target_concept__rank__level__isnull=False, origin_concept__rank__level__isnull=True, rel_type=REL_TYPES.narrower).first()        
+        while missedRank  :
+            missedRank.origin_concept.rank.level = missedRank.target_concept.rank.level + 1
+            missedRank.origin_concept.rank.save()
+            missedRank = SemRelation.objects.filter(target_concept__rank__level__isnull=False, origin_concept__rank__level__isnull=True, rel_type=REL_TYPES.narrower).first()        
+        
+        
             
 class ConceptManager(models.Manager):    
     def get_by_natural_key(self, uri):

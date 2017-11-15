@@ -148,6 +148,7 @@ class SchemeAdmin(FkAutocompleteAdmin):
 admin.site.register(Scheme, SchemeAdmin)
 
 class ConceptRankAdmin(FkAutocompleteAdmin):
+    list_display = ('pref_label','level')
     pass
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
