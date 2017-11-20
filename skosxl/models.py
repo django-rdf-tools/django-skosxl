@@ -183,6 +183,7 @@ class ConceptRank(models.Model):
     level= models.PositiveSmallIntegerField(blank=True, null=True, help_text=_(u'the depth this type of concept represents'))
     pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Label of concept'),max_length=255)
     uri= models.URLField(_(u'definition reference'),blank=True,null=True,help_text=_(u'URI of definition'),max_length=255)
+    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text=u'Preferred style - either a #RGB colour or a CSS style string')
 
     def __unicode__(self):
         return self.pref_label
@@ -248,6 +249,7 @@ class Concept(models.Model):
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
     scheme      = models.ForeignKey(Scheme, blank=True, null=True, help_text=_(u'Note - currently only membership of a single scheme supported'))
     rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_(u'Rank (depth) of Concept in ranked hierarchy, if applicable'))
+    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text=u'Preferred style - either a #RGB colour or a CSS style string')
     changenote  = models.TextField(_(u'change note'),blank=True)
     created     = exfields.CreationDateTimeField(_(u'created'))
     modified    = exfields.ModificationDateTimeField(_(u'modified'))
@@ -506,7 +508,7 @@ class ImportedConceptScheme(ImportedResource):
     rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_(u'property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
     rankDepthProperty = RDFpath_Field(null=True, blank=True, max_length=1000,verbose_name=(_(u'property path of rank level ')), help_text='Property path, relative to Concept object, of rank depth(level), (integer starting with 0) if present')
     rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_(u'property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
-    rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy')
+    rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy. skos:topConcept will be ignored, and nodes matching this wil be set as topConcept.')
     def save(self,*args,**kwargs):  
         # save first - to make file available
         # import pdb; pdb.set_trace()
@@ -545,7 +547,6 @@ class ImportedConceptScheme(ImportedResource):
         target_map_concept = {
             URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf'): { 'bool_field': 'top_concept'} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',0),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#altLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',1),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#hiddenLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',2),)} , 
@@ -556,6 +557,8 @@ class ImportedConceptScheme(ImportedResource):
             URIRef(u'http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos#exactMatch'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
  
+        if not self.rankTopName :
+			    target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
         
         if not target_scheme:
            for conceptscheme in gr.subjects(predicate=rdftype, object=scheme) :
@@ -574,7 +577,7 @@ class ImportedConceptScheme(ImportedResource):
         related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme)
         scheme_obj.save()
         # now process any related objects
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         for c in self.getConcepts(s,gr):
             url = str(c)
             try: 
@@ -620,7 +623,10 @@ class ImportedConceptScheme(ImportedResource):
             _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
         
         ConceptRank.calcLevels(scheme=scheme_obj, topRank = self.rankTopName)
-        
+        if self.rankTopName :
+			Concept.objects.filter(scheme=scheme_obj, rank__pref_label=self.rankTopName).update(top_concept=True)
+            # and also any sub-trees whose roots start below this level
+			Concept.objects.filter(scheme=scheme_obj,top_concept=False,rank__isnull=False).exclude(rel_origin__rel_type=REL_TYPES.broader).update(top_concept=True)
         scheme_obj.bulk_save()
         return scheme_obj
     

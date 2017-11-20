@@ -3,7 +3,9 @@ from django.contrib import admin
 from skosxl.models import *
 from django.utils.translation import ugettext_lazy as _
 
-from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin, NoLookupsForeignKeyAutocompleteAdmin
+from django.forms import ModelForm
+
+from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
 
 # class LabelInline(InlineAutocompleteAdmin):
@@ -35,8 +37,19 @@ class SKOSMappingInline(admin.TabularInline):
 #    related_search_fields = {'target_concept' : ('labels__name','definition')}
     extra=1    
 
+class RelSelectForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(RelSelectForm, self).__init__(*args, **kwargs)
+        # access object through self.instance...
+        #import pdb; pdb.set_trace()
+        try:
+            self.fields['target_concept'].queryset = Concept.objects.filter(scheme=self.instance.origin_concept.scheme)
+        except:
+            pass
+        
 class RelInline(InlineAutocompleteAdmin):
     model = SemRelation
+    form = RelSelectForm
     fk_name = 'origin_concept'
     fields = ('rel_type', 'target_concept')
     related_search_fields = {'target_concept' : ('labels__name','definition')}
@@ -99,9 +112,9 @@ class ConceptAdmin(FkAutocompleteAdmin):
         return super(ConceptAdmin, self).changelist_view(request, 
                                         extra_context={'scheme_id':scheme_id})
             
-    fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept')}),
+    fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept','definition')}),
                     (_(u'Meta-data'),
-                    {'fields':(('definition','changenote'),'created','modified'),
+                    {'fields':('prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
     inlines = [   NotationInline, LabelInline, RelInline, SKOSMappingInline]
