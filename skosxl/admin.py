@@ -161,7 +161,8 @@ class SchemeAdmin(FkAutocompleteAdmin):
 admin.site.register(Scheme, SchemeAdmin)
 
 class ConceptRankAdmin(FkAutocompleteAdmin):
-    list_display = ('pref_label','level')
+    list_display = ('pref_label','level','scheme')
+    list_filter = (('scheme',admin.RelatedOnlyFieldListFilter),)
     pass
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
