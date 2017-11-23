@@ -7,18 +7,35 @@
 <div id="title" class="grid_12 grid">
 {% block title %}<h3>SKOS Scheme : {{object}}</h3>{% endblock %}
     <p><a href="{{ object.uri }}">{{ object.uri }}</a></p>
+
     <br/>
 </div>
+
+<div id="chart" class="gallery">
+</div>
+
+
+<script type="text/javascript">
+    json_data = "/skosxl/admin_scheme_tree/{{ object.id }}/"
+</script>
+<script type="text/javascript" src="/static/d3.v3.min.js"></script>
+<script type="text/javascript" src="/static/d3.layout.js"></script>
+<!-- <script type="text/javascript" src="/static/d3.tree.js"></script> -->
+<link rel="stylesheet" type="text/css" href="/static/d3.tree.css" />
+<script type="text/javascript" src="/static/expandable_tree.js"></script>
+<script type="text/javascript">
+  
+</script>
 
 {% block content %}
 <div id="content">
     <div class="grid_4 grid">    
         
     {% if concepts %}
-        <h4>Concept</h4>
+        <h4>Concepts</h4>
         <ul>
         {% for c in concepts %}
-        <li><a href="{{c.get_absolute_url}}">{{ c }}</a></li>
+        <li><a href="{{c.get_absolute_url}}">{{ c.pref_label }}</a></li>
         {%endfor%} 
         </ul>
         <br/>

@@ -89,7 +89,7 @@ SELECT ?label ?uri WHERE {
 def scheme_detail(request,slug):
     context = {}
 #    import pdb; pdb.set_trace()
-    scheme = Scheme.objects.get(id=slug)
+    scheme = Scheme.objects.get(slug=slug)
     context['object'] = scheme
     context['concepts'] = Concept.objects.filter(scheme=scheme)
     return render_to_response('scheme_detail.html',context,RequestContext(request))
@@ -99,6 +99,7 @@ def concept_detail(request,id):
     context = {}
     context['object'] = Concept.objects.get(id=id)
     context['preflabels'] = Label.preflabels.filter(concept=concept)
+    context['altlabels'] = Label.altlabels.filter(concept=concept)
     context['notations'] = Notation.objects.filter(concept=concept)
     return render_to_response('concept_detail.html',context,RequestContext(request))
 

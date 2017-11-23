@@ -6,8 +6,9 @@
 
 <div id="title" class="grid_12 grid">
 {% block title %}<h3>Concept : {{object}}</h3>{% endblock %}
-    <p><a href="{{ uri }}">{{uri}}</p>
-	<p>In scheme <a href="{{ object.scheme.uri }}">{{ object.scheme.uri }}</p>
+    <p><a href="{{ uri }}">{{uri}}</a></p>
+	<p>In scheme <a href="{{ object.scheme.uri }}">{{ object.scheme.uri }}</a></p>
+		<p><a href="{{ object.scheme.get_absolute_url }}">{{ object.scheme.get_absolute_url }}</a></p>
     <br/>
 </div>
 
@@ -24,14 +25,16 @@
         </ul>
         <br/>
 		
+		{% if altlabels %}
         <h4>AltLabels</h4>
         <ul>
         {% for l in altlabels %}
-        <li>{{ l }}{% if l.language %}@{{l.language}}{% endif %}</li>
+          <li>{{ l }}{% if l.language %}@{{l.language}}{% endif %}</li>
         {%endfor%} 
         </ul>
         <br/> 
-
+        {% endif %}
+		
 	{% if notations %}
         <h4>Notations</h4>
         <ul>

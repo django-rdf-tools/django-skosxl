@@ -33,6 +33,7 @@ rdftype=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
 concept=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
 scheme=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
 collection=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
+hasTopConcept=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
 
 PLACEHOLDER = '< no label >'
 
@@ -119,10 +120,14 @@ class Scheme(models.Model):
         return( self.uri )
         
     def get_absolute_url(self):
-        return reverse('scheme_detail', args=[self.slug])
+        #import pdb; pdb.set_trace()
+        return reverse('skosxl:scheme_detail', args=[self.slug])
     def tree(self):
         tree = (self, [])  # result is a tuple(scheme,[child concepts])
-        for concept in Concept.objects.filter(scheme=self,top_concept=True):
+        topConcepts = Concept.objects.filter(scheme=self,top_concept=True)
+        if not topConcepts :
+            topConcepts = Concept.objects.filter(scheme=self).exclude(rel_origin__rel_type=REL_TYPES.broader)      
+        for concept in topConcepts:
             tree[1].append((concept,concept.get_narrower_concepts())) 
             #with nested tuple(concept, [child concepts])
         return tree 
@@ -558,14 +563,17 @@ class ImportedConceptScheme(ImportedResource):
             URIRef(u'http://www.w3.org/2004/02/skos#exactMatch'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
  
         if not self.rankTopName :
-			    target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
+                target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
         
         if not target_scheme:
-           for conceptscheme in gr.subjects(predicate=rdftype, object=scheme) :
+            s = None
+            for conceptscheme in gr.subjects(predicate=rdftype, object=scheme) :
                 if target_scheme :
                     raise Exception('Multiple concept schemes found in source document - specify target first')
                 target_scheme = str(conceptscheme)
                 s = conceptscheme
+            if not s:
+                raise Exception('No concept schemes found in source document - specify target first')
         else:
             s = URIRef(target_scheme)
             
@@ -624,9 +632,13 @@ class ImportedConceptScheme(ImportedResource):
         
         ConceptRank.calcLevels(scheme=scheme_obj, topRank = self.rankTopName)
         if self.rankTopName :
-			Concept.objects.filter(scheme=scheme_obj, rank__pref_label=self.rankTopName).update(top_concept=True)
+            Concept.objects.filter(scheme=scheme_obj, rank__pref_label=self.rankTopName).update(top_concept=True)
             # and also any sub-trees whose roots start below this level
-			Concept.objects.filter(scheme=scheme_obj,top_concept=False,rank__isnull=False).exclude(rel_origin__rel_type=REL_TYPES.broader).update(top_concept=True)
+            Concept.objects.filter(scheme=scheme_obj,top_concept=False,rank__isnull=False).exclude(rel_origin__rel_type=REL_TYPES.broader).update(top_concept=True)
+        else :
+            topConcepts = gr.objects(predicate=hasTopConcept, subject=s)
+            for tc in topConcepts :
+                Concept.objects.get(uri=str(tc)).update(top_concept=True) 
         scheme_obj.bulk_save()
         return scheme_obj
     
@@ -680,7 +692,7 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
             if prop.get('lang_field') :
                 values[prop.get('lang_field') ] = o.language or DEFAULT_LANG
             if prop.get('datatype_field') :
-                values[prop.get('datatype_field') ] = o.datatype 
+                values[prop.get('datatype_field') ] = o.datatype or URIRef("xsd:string")
             if prop.get('object_field') :
                 # find a matching object 
                 object_prop = prop['object_field']
