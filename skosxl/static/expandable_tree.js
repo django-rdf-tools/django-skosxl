@@ -59,7 +59,7 @@ function update(source) {
 
   nodeEnter.append("svg:circle")
       .attr("r", 1e-6)
-      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+      .style("fill", function(d) { return (d._children && d._children.length > 0 ) ? "lightsteelblue" : "#fff"; });
 
   nodeEnter.append("svg:text")
       .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
@@ -130,7 +130,7 @@ function update(source) {
 
 // Toggle children.
 function toggle(d) {
-  if (d.children) {
+  if (d.children && d.children.length > 0 ) {
     d._children = d.children;
     d.children = null;
   } else {
