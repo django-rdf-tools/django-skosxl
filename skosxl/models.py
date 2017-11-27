@@ -29,12 +29,6 @@ from rdflib.term import URIRef, Literal
 import itertools
 import json
 
-rdftype=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
-concept=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
-scheme=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
-collection=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
-hasTopConcept=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
-
 PLACEHOLDER = '< no label >'
 
 LABEL_TYPES = Choices(
@@ -122,14 +116,32 @@ class Scheme(models.Model):
     def get_absolute_url(self):
         #import pdb; pdb.set_trace()
         return reverse('skosxl:scheme_detail', args=[self.slug])
+        
+    def getCollectionGraph(self):
+        collections = Collection.objects.filter(scheme=self)
+        tree = []
+        for col in collections:
+            tree.append ( (col,[] ))
+        return tree
+        
     def tree(self):
+        import pdb; pdb.set_trace()
         tree = (self, [])  # result is a tuple(scheme,[child concepts])
+        collections = self.getCollectionGraph()
         topConcepts = Concept.objects.filter(scheme=self,top_concept=True)
         if not topConcepts :
-            topConcepts = Concept.objects.filter(scheme=self).exclude(rel_origin__rel_type=REL_TYPES.broader)      
-        for concept in topConcepts:
-            tree[1].append((concept,concept.get_narrower_concepts())) 
-            #with nested tuple(concept, [child concepts])
+            topConcepts = Concept.objects.filter(scheme=self).exclude(rel_origin__rel_type=REL_TYPES.broader)
+        if collections and topConcepts :
+            tree[1].append(("Collections",[]))
+            for col in collections:
+                tree[1][0][1].append((col,[]))
+            tree[1].append(("TopConcepts",[]))
+            for concept in topConcepts:
+                tree[1][1][1].append((concept,concept.get_narrower_concepts())) 
+        else :
+            for concept in topConcepts:
+                tree[1].append((concept,concept.get_narrower_concepts())) 
+                #with nested tuple(concept, [child concepts])
         return tree 
     def test_tree(self):
         i = self.tree()
@@ -147,30 +159,48 @@ class Scheme(models.Model):
                             print idx, val
    
     # needs fixing - has limited depth of traversal - probably want an option to paginate and limit.
+    @staticmethod                      
+    def _recurse_json_tree(obj_tree,prefix):
+        """ takes a tree with a an object and a list of child objects and makes it into a json D3 tree with strings """
+        try:
+            label = obj_tree[0].pref_label
+        except:
+            label = str(obj_tree[0])
+        ja_tree = {'name' : label, 'children' : []}
+        if type(obj_tree[0]) == Concept :
+            ja_tree['url']= prefix+'/skosxl/concept/'+str(obj_tree[0].id)+'/'
+            
+        for jdx, j in enumerate(obj_tree[1]):#j[0] is a concept, j[1] a list of children
+            ja_tree['children'].append(Scheme._recurse_json_tree(j,prefix))
+        
+        return ja_tree
+        
     def json_tree(self,admin_url=False):
         i = self.tree()
         prefix = '/admin' if admin_url else ''
-        ja_tree = {'name' : i[0].pref_label, 'children' : []}
-        for jdx, j in enumerate(i[1]):#j[0] is a concept, j[1] a list of child concepts
-            ja_tree['children'].append({'name':j[0].pref_label,
-                                        'url':prefix+'/skosxl/concept/'+str(j[0].id)+'/',
-                                        'children':[]})
-            for kdx, k in enumerate(j[1]):
-                ja_tree['children'][jdx]['children'].append({'name':k[0].pref_label,
-                                            'url':prefix+'/skosxl/concept/'+str(k[0].id)+'/',
-                                            'children':[]})
-                for ldx,l in enumerate(k[1]):
-                    ja_tree['children'][jdx]['children'][kdx]['children'].append({'name':l[0].pref_label,
-                                                'url':prefix+'/skosxl/concept/'+str(l[0].id)+'/',
-                                                'children':[]})
-                    for mdx, m in enumerate(l[1]):
-                        ja_tree['children'][jdx]['children'][kdx]['children'][ldx]['children'].append({'name':m[0].pref_label,
-                                                    'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
-                                                    #'children':[] #stop
-                                                    })
+        ja_tree = Scheme._recurse_json_tree(i,prefix)
+        # ja_tree = {'name' : i[0].pref_label, 'children' : []}
+        # for jdx, j in enumerate(i[1]):#j[0] is a concept, j[1] a list of child concepts
+            # ja_tree['children'].append({'name':j[0].pref_label,
+                                        # 'url':prefix+'/skosxl/concept/'+str(j[0].id)+'/',
+                                        # 'children':[]})
+            # for kdx, k in enumerate(j[1]):
+                # ja_tree['children'][jdx]['children'].append({'name':k[0].pref_label,
+                                            # 'url':prefix+'/skosxl/concept/'+str(k[0].id)+'/',
+                                            # 'children':[]})
+                # for ldx,l in enumerate(k[1]):
+                    # ja_tree['children'][jdx]['children'][kdx]['children'].append({'name':l[0].pref_label,
+                                                # 'url':prefix+'/skosxl/concept/'+str(l[0].id)+'/',
+                                                # 'children':[]})
+                    # for mdx, m in enumerate(l[1]):
+                        # ja_tree['children'][jdx]['children'][kdx]['children'][ldx]['children'].append({'name':m[0].pref_label,
+                                                    # 'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
+                                                    # #'children':[] #stop
+                                                    # })
         return json.dumps(ja_tree, sort_keys=True,
                           indent=4, separators=(',', ': '))
-
+ 
+    
 class SchemeMeta(models.Model):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
@@ -277,7 +307,7 @@ class Concept(models.Model):
                                             # help_text=_(u'These properties are used to state mapping (alignment) links between SKOS concepts in different concept schemes'))
                                             
     def __unicode__(self):
-        return "".join((self.term, "(", self.uri , ")" ))
+        return "".join((self.term, " (", self.uri , ")" ))
     
     def natural_key(self):
         return ( self.uri )
@@ -353,6 +383,31 @@ class Concept(models.Model):
         # unique_together = (('scheme', 'term'),)
         pass
 
+class CollectionMember(models.Model):
+    """ potentially ordered membership of collection """
+    collection = models.ForeignKey('Collection')
+    index = models.PositiveSmallIntegerField(blank=True,null=True)
+    concept = models.ForeignKey('Concept',blank=True,null=True)
+    subcollection = models.ForeignKey('Collection',related_name='subcollection', blank=True,null=True)
+    class Meta :
+        ordering = [ 'index', ]
+        # check index is unique if present.. unique_together = (('scheme', 'term'),)
+        pass
+
+class Collection(models.Model):
+    """ SKOS Collection """
+    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Collections only support single label currently'),max_length=255)
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True, help_text=_(u'Collection URI'))    
+    scheme  = models.ForeignKey(Scheme, help_text=_(u'Scheme containing Collection'))
+    ordered = models.BooleanField(default=False, verbose_name=_(u'Collection is ordered'))
+    members = models.ManyToManyField( "self",symmetrical=False,
+                                            through='CollectionMember',
+                                            verbose_name=(_(u'Members')),
+                                            help_text=_(u'Members are optional indexed references to Concepts'))
+                                            
+    def __unicode__(self):
+        return "".join(filter(None,(self.pref_label, " (", self.uri , ")" )))
+                                            
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
     code =  models.CharField(_(u'notation'),max_length=100, null=False)
@@ -505,6 +560,14 @@ class MapRelation(models.Model):
 
 #     
 
+
+rdftype=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+concept=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
+scheme=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
+collection=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
+hasTopConcept=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
+
+
 class ImportedConceptScheme(ImportedResource):
 
     target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
@@ -562,6 +625,20 @@ class ImportedConceptScheme(ImportedResource):
             URIRef(u'http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos#exactMatch'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
  
+        target_map_collection = {
+            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            # URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'concept'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'concept'} ,
+        }
+        target_map_subcollections = {
+            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            # URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'subcollection'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'subcollection'} ,
+        }
         if not self.rankTopName :
                 target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
         
@@ -584,7 +661,7 @@ class ImportedConceptScheme(ImportedResource):
         scheme_obj.skip_post_save = True
         related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme)
         scheme_obj.save()
-        # now process any related objects
+        # now process any related objects - concepts first then any collections
         # import pdb; pdb.set_trace()
         for c in self.getConcepts(s,gr):
             url = str(c)
@@ -639,6 +716,29 @@ class ImportedConceptScheme(ImportedResource):
             topConcepts = gr.objects(predicate=hasTopConcept, subject=s)
             for tc in topConcepts :
                 Concept.objects.get(uri=str(tc)).update(top_concept=True) 
+        import pdb; pdb.set_trace()               
+        # now process collections
+        for row in gr.query("SELECT DISTINCT ?collection WHERE {   ?collection a skos:Collection . {?collection skos:member ?member } UNION {?collection skos:memberList ?member } }" ):
+            col = row[0]
+            (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
+            members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection)
+            collection_obj.save()
+            # two passes - for related concepts and related collections
+
+            members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Collection }" % col )
+            related_objects = ()
+            for m in members:
+                related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+            if related_objects:
+                _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
+            members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Concept }" % col )
+            related_objects = ()
+            for m in members:
+                related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+            if related_objects: 
+             _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,related_objects=related_objects, conceptClass=Concept, classDefaults=classDefaults)
+         
+     
         scheme_obj.bulk_save()
         return scheme_obj
     
@@ -654,7 +754,9 @@ def _has_items(iterable):
     except StopIteration:
         return False, []
         
-def _set_object_properties(gr,uri,obj,target_map) :       
+def _set_object_properties(gr,uri,obj,target_map) : 
+        """ sets object properties, and returns a list of related objects that need to be created if missing """
+        
         # loop over scheme properties and set
         related_objects = ()
         for (p,o) in gr.predicate_objects(subject=uri) :
@@ -680,12 +782,16 @@ def _set_object_properties(gr,uri,obj,target_map) :
         
 def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,conceptClass,classDefaults) :                   
         # process all the related objects
+
         for (p,o,obj_type_name) in related_objects :
             prop = target_map.get(p)
+            if not prop:
+                continue
             try:
                 reltype = ContentType.objects.get(model=obj_type_name.lower())
             except ContentType.DoesNotExist as e :
                 raise ValueError("Could not locate attribute or related model '{}' for predicate '{}'".format(obj_type_name, str(p)) )
+            # if related_field 
             values = { prop.get('related_field') : obj }
             if prop.get('text_field') : 
                 values[prop['text_field']] = unicode(o) 
@@ -702,6 +808,5 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
             if prop.get('set_fields') :
                 for (fname,val) in prop.get('set_fields') :
                     values[fname] = val
-                
             (actual_obj,new)= reltype.model_class().objects.get_or_create(**values)
             

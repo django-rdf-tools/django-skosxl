@@ -167,6 +167,22 @@ class ConceptRankAdmin(FkAutocompleteAdmin):
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
 
+class CollectionMemberInline(InlineAutocompleteAdmin):
+    model = CollectionMember
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('index','concept','subcollection')
+    fk_name = 'collection'
+ #   list_display = ('pref_label',)
+    extra = 0
+    
+class CollectionAdmin(admin.ModelAdmin):
+    inlines = [  CollectionMemberInline, ]
+    pass
+
+admin.site.register(Collection, CollectionAdmin)
+
 class ImportedConceptSchemeAdmin(admin.ModelAdmin):
     pass
 
