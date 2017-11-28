@@ -117,24 +117,47 @@ class Scheme(models.Model):
         #import pdb; pdb.set_trace()
         return reverse('skosxl:scheme_detail', args=[self.slug])
         
-    def getCollectionGraph(self):
+    def getCollectionGraphs(self):
+        """ builds a forest (list) of trees of Collections,starting at root nodes """ 
         collections = Collection.objects.filter(scheme=self)
-        tree = []
+        tree = {}
         for col in collections:
-            tree.append ( (col,[] ))
+            tree[ col.id ] = [col,[], True ]
+            for member in CollectionMember.objects.filter(collection=col):
+                tree[col.id][1].append( member.subcollection or member.concept )
+        # now traverse and set top=False for all children nodes.
+        for node in tree:
+            for child in tree[node][1]:
+                if type(child) == Collection:
+                    tree[child.id][2] = False
+        # now traverse again recursively to build each tree
+        
+        forest = []
+        for node in tree:
+            if tree[node][2] : # a root node
+                forest.append ( self._getMembers(tree, node) )
+        return forest
+
+    
+    def _getMembers(self,treedict,node):
+        tree = ( treedict[node][0], [])
+        for member in treedict[node][1]:
+            if type(member) == Collection:
+                tree[1].append( self._getMembers(treedict, member.id) )
+            else:
+                tree[1].append( (member, []))
+             
         return tree
         
     def tree(self):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         tree = (self, [])  # result is a tuple(scheme,[child concepts])
-        collections = self.getCollectionGraph()
+        collections = self.getCollectionGraphs()
         topConcepts = Concept.objects.filter(scheme=self,top_concept=True)
         if not topConcepts :
             topConcepts = Concept.objects.filter(scheme=self).exclude(rel_origin__rel_type=REL_TYPES.broader)
         if collections and topConcepts :
-            tree[1].append(("Collections",[]))
-            for col in collections:
-                tree[1][0][1].append((col,[]))
+            tree[1].append(("Collections",collections))           
             tree[1].append(("TopConcepts",[]))
             for concept in topConcepts:
                 tree[1][1][1].append((concept,concept.get_narrower_concepts())) 
@@ -169,7 +192,9 @@ class Scheme(models.Model):
         ja_tree = {'name' : label, 'children' : []}
         if type(obj_tree[0]) == Concept :
             ja_tree['url']= prefix+'/skosxl/concept/'+str(obj_tree[0].id)+'/'
-            
+        elif type(obj_tree[0]) == Collection :
+            ja_tree['url']= prefix+'/skosxl/collection/'+str(obj_tree[0].id)+'/'
+      
         for jdx, j in enumerate(obj_tree[1]):#j[0] is a concept, j[1] a list of children
             ja_tree['children'].append(Scheme._recurse_json_tree(j,prefix))
         
