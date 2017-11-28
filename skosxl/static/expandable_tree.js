@@ -67,7 +67,14 @@ function update(source) {
       .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
       .text(function(d) { return d.name; })
       .style("fill-opacity", 1e-6);
-
+	  
+  nodeEnter.append("svg:text")
+      .attr("x", 10)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "start" )
+      .text(function(d) { return d._children ? "(" + d._children.length + " nodes...)" : ""  })
+      .style("fill-opacity", 0.5);
+	  
   // Transition nodes to their new position.
   var nodeUpdate = node.transition()
       .duration(duration)
