@@ -1,12 +1,12 @@
 
-from rdf_io.models import Namespace, ObjectMapping,AttributeMapping 
+from rdf_io.models import Namespace, ObjectMapping,AttributeMapping, ConfigVar
 
 from skosxl.models import Scheme
 
 from django.conf import settings 
-RDFSTORE=settings.RDFSTORE,
+#RDFSTORE=settings.RDFSTORE,
 #SITEURL=settings.SITEURL,
-RDFSERVER=settings.RDFSERVER
+#RDFSERVER=settings.RDFSERVER
 
 try:
     SKOSPATHS=settings.SKOSPATHS
@@ -107,7 +107,7 @@ def load_urirules(url_base) :
                     'description' : ' : '.join((load_key ,'binding to register for ',api['apilabel'],label)) ,
                     'parent' : apirule ,
                     'register' : reg ,
-                    'service_location' :  "".join((RDFSERVER,"/dna")),
+                    'service_location' :  "".join((ConfigVar.getval("RDFSERVER"),"/dna")),
                     'service_params' : None ,
                     'pattern' : None ,
                     'use_lda' : True ,

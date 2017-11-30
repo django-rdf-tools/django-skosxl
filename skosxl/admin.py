@@ -133,6 +133,24 @@ def create_concept_command(modeladmin, request, queryset):
 create_concept_command.short_description = _(u"Create concept(s) from selected label(s)")
 
 
+class ConceptMetaInline(InlineAutocompleteAdmin):
+    model = ConceptMeta
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('subject','metaprop','value')
+ #   list_display = ('pref_label',)
+    extra = 1
+
+class SchemeMetaInline(InlineAutocompleteAdmin):
+    model = SchemeMeta
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('subject','metaprop','value')
+ #   list_display = ('pref_label',)
+    extra = 1
+   
 class ConceptInline(InlineAutocompleteAdmin):
     model = Concept
 #    list_fields = ('pref_label', )
@@ -153,12 +171,22 @@ class LabelAdmin(FkAutocompleteAdmin):
 
 admin.site.register(Label, LabelAdmin)
 
+class SchemeBase(Scheme):
+    class Meta:
+        proxy = True
 
+       
 class SchemeAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')
-    inlines = [  ConceptInline, ]
+    inlines = [  SchemeMetaInline, ]  
+admin.site.register(SchemeBase, SchemeAdmin)
+
+
+class SchemeConceptAdmin(FkAutocompleteAdmin):
+    readonly_fields = ('created','modified')
+    inlines = [  SchemeMetaInline, ConceptInline, ]
   
-admin.site.register(Scheme, SchemeAdmin)
+admin.site.register(Scheme, SchemeConceptAdmin)
 
 class ConceptRankAdmin(FkAutocompleteAdmin):
     list_display = ('pref_label','level','scheme')

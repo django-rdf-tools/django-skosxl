@@ -88,6 +88,16 @@ class SchemeManager(models.Manager):
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
 
+class SchemeMeta(models.Model):
+    """
+        extensible metadata using rdf_io managed reusable generic metadata properties
+    """
+    subject      = models.ForeignKey('Scheme', related_name="metaprops") 
+    metaprop   =  models.ForeignKey(GenericMetaProp) 
+    value = models.CharField(_(u'value'),max_length=2000)
+    def __unicode__(self):
+        return unicode(self.metaprop)
+        
 class Scheme(models.Model):
     objects = SchemeManager()
     skip_post_save = False
@@ -98,7 +108,9 @@ class Scheme(models.Model):
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
     definition  = models.TextField(_(u'definition'), blank=True)
-    meta  = models.TextField(_(u'additional metadata'), help_text=_(u'(<predicate> <object> ; list) '), blank=True)
+    
+    # metaprops = models.ManyToManyField(
+    
     def __unicode__(self):
         return self.pref_label
         
@@ -226,14 +238,8 @@ class Scheme(models.Model):
                           indent=4, separators=(',', ': '))
  
     
-class SchemeMeta(models.Model):
-    """
-        extensible metadata using rdf_io managed reusable generic metadata properties
-    """
-    scheme      = models.ForeignKey(Scheme) 
-    metaprop   =  models.ForeignKey(GenericMetaProp) 
-    value = models.CharField(_(u'value'),max_length=500)
 
+        
 class ConceptRank(models.Model):
     """ a ordered, labelled ranking and typing mechanism for Concept Hierarchies. 
     
@@ -289,7 +295,16 @@ class ConceptRank(models.Model):
             missedRank.origin_concept.rank.save()
             missedRank = SemRelation.objects.filter(target_concept__rank__level__isnull=False, origin_concept__rank__level__isnull=True, rel_type=REL_TYPES.narrower).first()        
         
-        
+
+class ConceptMeta(models.Model):
+    """
+        extensible metadata using rdf_io managed reusable generic metadata properties
+    """
+    subject       = models.ForeignKey("Concept", related_name="metaprops") 
+    metaprop   =  models.ForeignKey(GenericMetaProp) 
+    value = models.CharField(_(u'value'),max_length=2000)
+    def __unicode__(self):
+        return unicode(self.metaprop)        
             
 class ConceptManager(models.Manager):    
     def get_by_natural_key(self, uri):
@@ -320,9 +335,11 @@ class Concept(models.Model):
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True, help_text=_(u'Leave blank to inherit namespace from containing scheme'))    
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
 
+ #
     top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
     sem_relations = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
+                                            related_name='concept',
                                             verbose_name=(_(u'Semantic relations')),
                                             help_text=_(u'SKOS semantic relations are links between SKOS concepts, where the link is inherent in the meaning of the linked concepts.'))
     # map_relations = models.OneToManyField( "self",symmetrical=False,
@@ -602,6 +619,9 @@ class ImportedConceptScheme(ImportedResource):
     rankDepthProperty = RDFpath_Field(null=True, blank=True, max_length=1000,verbose_name=(_(u'property path of rank level ')), help_text='Property path, relative to Concept object, of rank depth(level), (integer starting with 0) if present')
     rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_(u'property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
     rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy. skos:topConcept will be ignored, and nodes matching this wil be set as topConcept.')
+
+    importerrors = []
+    
     def save(self,*args,**kwargs):  
         # save first - to make file available
         # import pdb; pdb.set_trace()
@@ -630,6 +650,7 @@ class ImportedConceptScheme(ImportedResource):
         if not gr:
             raise Exception ( _(u'No RDF graph available for resource'))
         
+        self.importerrors = []
         target_map_scheme = {
             URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
             URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
@@ -730,7 +751,11 @@ class ImportedConceptScheme(ImportedResource):
             # now all the rest of the properties
             related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept)
             concept_obj.save()
-            _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
+            try:
+                _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
+            except Exception as e:
+                print "Error in concept building: %s" % str(e)
+                self.importerrors.append(e)
         
         ConceptRank.calcLevels(scheme=scheme_obj, topRank = self.rankTopName)
         if self.rankTopName :
@@ -741,28 +766,31 @@ class ImportedConceptScheme(ImportedResource):
             topConcepts = gr.objects(predicate=hasTopConcept, subject=s)
             for tc in topConcepts :
                 Concept.objects.get(uri=str(tc)).update(top_concept=True) 
-        import pdb; pdb.set_trace()               
+        # import pdb; pdb.set_trace()               
         # now process collections
         for row in gr.query("SELECT DISTINCT ?collection WHERE {   ?collection a skos:Collection . {?collection skos:member ?member } UNION {?collection skos:memberList ?member } }" ):
             col = row[0]
-            (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
-            members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection)
-            collection_obj.save()
-            # two passes - for related concepts and related collections
+            try:
+                (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
+                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection)
+                collection_obj.save()
+                # two passes - for related concepts and related collections
 
-            members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Collection }" % col )
-            related_objects = ()
-            for m in members:
-                related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
-            if related_objects:
-                _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
-            members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Concept }" % col )
-            related_objects = ()
-            for m in members:
-                related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
-            if related_objects: 
-             _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,related_objects=related_objects, conceptClass=Concept, classDefaults=classDefaults)
-         
+                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Collection }" % col )
+                related_objects = ()
+                for m in members:
+                    related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+                if related_objects:
+                    _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
+                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Concept }" % col )
+                related_objects = ()
+                for m in members:
+                    related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+                if related_objects: 
+                 _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,related_objects=related_objects, conceptClass=Concept, classDefaults=classDefaults)
+            except Exception as e:
+                print "Error in collection building: %s" % str(e)
+                self.importerrors.append(e)
      
         scheme_obj.bulk_save()
         return scheme_obj
@@ -801,7 +829,7 @@ def _set_object_properties(gr,uri,obj,target_map) :
                     setattr(obj,prop['text_field'],unicode(o))
                     #print "setting ",prop['text_field'],unicode(o)
             else:
-                # print 'General meta %s ' % p
+                #_insertMeta
                 continue                
         return related_objects
         
@@ -833,5 +861,8 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
             if prop.get('set_fields') :
                 for (fname,val) in prop.get('set_fields') :
                     values[fname] = val
-            (actual_obj,new)= reltype.model_class().objects.get_or_create(**values)
+            try:
+                (actual_obj,new)= reltype.model_class().objects.get_or_create(**values)
+            except Exception as e:
+                raise ValueError("Cannot create %s object with values %s : exception %s" % (str(reltype.model_class()),str(values), str(e))) 
             
