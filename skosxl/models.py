@@ -93,7 +93,7 @@ class SchemeMeta(models.Model):
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
     subject      = models.ForeignKey('Scheme', related_name="metaprops") 
-    metaprop   =  models.ForeignKey(GenericMetaProp) 
+    metaprop   =  models.ForeignKey(GenericMetaProp,verbose_name='property') 
     value = models.CharField(_(u'value'),max_length=2000)
     def __unicode__(self):
         return unicode(self.metaprop)
@@ -301,8 +301,8 @@ class ConceptMeta(models.Model):
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
     subject       = models.ForeignKey("Concept", related_name="metaprops") 
-    metaprop   =  models.ForeignKey(GenericMetaProp) 
-    value = models.CharField(_(u'value'),max_length=2000)
+    metaprop   =  models.ForeignKey(GenericMetaProp, verbose_name='property') 
+    value = models.CharField(_(u'value'),max_length=2000,help_text=_(u'enclose a URL in <> to force encoding as a resource'))
     def __unicode__(self):
         return unicode(self.metaprop)        
             

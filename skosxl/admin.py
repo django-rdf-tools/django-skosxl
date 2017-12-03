@@ -61,6 +61,17 @@ def create_action(scheme):
     return (name, (fun, name, _(u'Make selected concept part of the "%s" scheme') % (scheme,)))
 
 
+class ConceptMetaInline(InlineAutocompleteAdmin):
+    model = ConceptMeta
+    verbose_name = 'Additional property'
+    verbose_name_plural = 'Additional properties'
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('subject','metaprop','value')
+ #   list_display = ('pref_label',)
+    extra = 1
+    
 class ConceptAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')
     search_fields = ['term','uri','pref_label','slug','definition', 'rank__pref_label']
@@ -117,7 +128,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
                     {'fields':('prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
-    inlines = [   NotationInline, LabelInline, RelInline, SKOSMappingInline]
+    inlines = [   ConceptMetaInline , NotationInline, LabelInline, RelInline, SKOSMappingInline]
     def get_actions(self, request):
         actions = super(ConceptAdmin, self).get_actions(request)
         actions.update(dict(create_action(s) for s in Scheme.objects.all()))
@@ -133,14 +144,6 @@ def create_concept_command(modeladmin, request, queryset):
 create_concept_command.short_description = _(u"Create concept(s) from selected label(s)")
 
 
-class ConceptMetaInline(InlineAutocompleteAdmin):
-    model = ConceptMeta
-#    list_fields = ('pref_label', )
-    show_change_link = True
-    max_num = 20
-    fields = ('subject','metaprop','value')
- #   list_display = ('pref_label',)
-    extra = 1
 
 class SchemeMetaInline(InlineAutocompleteAdmin):
     model = SchemeMeta
@@ -150,7 +153,9 @@ class SchemeMetaInline(InlineAutocompleteAdmin):
     fields = ('subject','metaprop','value')
  #   list_display = ('pref_label',)
     extra = 1
-   
+    verbose_name = 'Additional property'
+    verbose_name_plural = 'Additional properties'
+#  
 class ConceptInline(InlineAutocompleteAdmin):
     model = Concept
 #    list_fields = ('pref_label', )
