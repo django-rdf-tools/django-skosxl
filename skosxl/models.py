@@ -162,22 +162,44 @@ class Scheme(models.Model):
         return tree
         
     def tree(self):
+        MAXLEAFS = 20
         #import pdb; pdb.set_trace()
         tree = (self, [])  # result is a tuple(scheme,[child concepts])
         collections = self.getCollectionGraphs()
+        topConcepts, num, numleafs = self.getTopConcepts()
+ 
+        if collections and topConcepts or numleafs < num and num > MAXLEAFS :
+            if collections:
+                tree[1].append(("Collections",collections))           
+            tree[1].append(("TopConcepts",topConcepts))
+            if numleafs < num and num > MAXLEAFS :
+                rootConcepts = []
+                for c in topConcepts:
+                    if c[1] :
+                        rootConcepts.append(c)
+                tree[1].append(("Hierarchies", rootConcepts ))
+            
+        else :
+            tree= (self,topConcepts)
+                
+                #with nested tuple(concept, [child concepts])
+        return tree 
+    
+    def getTopConcepts(self):
+        tree = []
         topConcepts = Concept.objects.filter(scheme=self,top_concept=True)
         if not topConcepts :
             topConcepts = Concept.objects.filter(scheme=self).exclude(rel_origin__rel_type=REL_TYPES.broader)
-        if collections and topConcepts :
-            tree[1].append(("Collections",collections))           
-            tree[1].append(("TopConcepts",[]))
-            for concept in topConcepts:
-                tree[1][1][1].append((concept,concept.get_narrower_concepts())) 
-        else :
-            for concept in topConcepts:
-                tree[1].append((concept,concept.get_narrower_concepts())) 
-                #with nested tuple(concept, [child concepts])
-        return tree 
+        nleafs = 0 # number of leaf nodes in topConcepts
+        total = 0
+        for concept in topConcepts: 
+            total = total + 1
+            children = concept.get_narrower_concepts()
+            if not children:
+                nleafs = nleafs + 1
+            tree.append((concept,children))     
+        return tree, total, nleafs
+        
     def test_tree(self):
         i = self.tree()
         print i[0]
