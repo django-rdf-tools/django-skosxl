@@ -63,14 +63,14 @@ function update(source) {
 
   nodeEnter.append("svg:text")
       .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
-      .attr("dy", function(d) { return (d.children || d._children ) ? "-1.35em" : ".35em"; })
+      .attr("dy", function(d) { return (d.children || d._children ) ? "-.85em" : ".35em"; })
       .attr("text-anchor", function(d) { return (d.children || d._children ) ? "middle" : "start"; })
       .text(function(d) { return d.name; })
       .style("fill-opacity", 1e-6);
 	  
   nodeEnter.append("svg:text")
       .attr("x", 10)
-      .attr("dy", "1.35em")
+      .attr("dy", ".85em")
       .attr("text-anchor", "start" )
       .text(function(d) { return d._children ? "(" + d._children.length + " nodes...)" : ""  })
       .style("fill-opacity", 0.5);
