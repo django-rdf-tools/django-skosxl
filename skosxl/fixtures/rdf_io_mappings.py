@@ -36,7 +36,8 @@ def load_rdf_mappings(url_base):
     # specific mapping
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
-
+    am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
+    
     # this needs further testing - especially about resource vs literal values.
     #am = AttributeMapping(scope=pm, attr="schememeta.value", predicate="schememeta.metaprop", is_resource=False).save()
   
@@ -60,23 +61,26 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='3'].uri", predicate="skos:narrowMatch", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='4'].uri", predicate="skos:relatedMatch", is_resource=True).save()
  
-    
-    pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme", "uri", "uri" )
-    am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
+     
+    pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
+    am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
     
     
 #    (object_type,created) = ObjectType.objects.get_or_create(uri="void:Dataset", defaults = { "label" : "VoiD Dataset" })
 
  
-def new_mapping(object_type,content_type_label, title, idfield, tgt):
+def new_mapping(object_type,content_type_label, title, idfield, tgt,filter=None):
     content_type = ContentType.objects.get(app_label="skosxl",model=content_type_label.lower())
- 
-    (pm,created) =   ObjectMapping.objects.get_or_create(name=title, defaults =
-        { "auto_push" : True , 
+    defaults =         { "auto_push" : True , 
           "id_attr" : idfield,
           "target_uri_expr" : tgt,
           "content_type" : content_type
-        })
+        }
+    if filter :
+        defaults['filter']=filter
+        
+    (pm,created) =   ObjectMapping.objects.get_or_create(name=title, defaults =defaults)
     if not created :
         AttributeMapping.objects.filter(scope=pm).delete()
     
