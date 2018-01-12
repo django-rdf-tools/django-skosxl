@@ -2,6 +2,8 @@
 from django.contrib import admin
 from skosxl.models import *
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Q
+from itertools import chain
 
 from django.forms import ModelForm
 
@@ -119,7 +121,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
         try :
             scheme_id = int(request.GET['scheme__id__exact'])
         except KeyError :
-            scheme_id = 1 # FIXME: if no scheme filter is called, get the first (or "General") : a fixture to create one ?
+            scheme_id = None # FIXME: if no scheme filter is called, get the first (or "General") : a fixture to create one ?
         return super(ConceptAdmin, self).changelist_view(request, 
                                         extra_context={'scheme_id':scheme_id})
             
@@ -164,7 +166,7 @@ class ConceptInline(InlineAutocompleteAdmin):
     fields = ('term','pref_label','rank','top_concept','status')
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
-    extra = 0
+    extra = 1
 
 class LabelAdmin(FkAutocompleteAdmin):
     list_display = ('label_text','label_type','concept')
@@ -200,17 +202,60 @@ class ConceptRankAdmin(FkAutocompleteAdmin):
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
 
+
+class CollectionMemberInlineForm(ModelForm):
+    fields = ('index','concept','subcollection')
+    class Meta:
+        model = CollectionMember
+        fields = ('index','concept','subcollection')
+        
+    def __init__(self, *args, **kwargs):
+        super(CollectionMemberInlineForm, self).__init__(*args, **kwargs)
+        if self.instance.id and self.instance.subcollection:
+            q =  Q(id=self.instance.subcollection.id)
+            unassigned_collections = self.fields['subcollection'].queryset
+            self.fields['subcollection'].queryset =  Collection.objects.filter(q) | unassigned_collections
+        else:
+            pass
+
+            
 class CollectionMemberInline(InlineAutocompleteAdmin):
     model = CollectionMember
+    form = CollectionMemberInlineForm
 #    list_fields = ('pref_label', )
     show_change_link = True
     max_num = 20
     fields = ('index','concept','subcollection')
     fk_name = 'collection'
  #   list_display = ('pref_label',)
-    extra = 0
+    extra = 1
+
+    def get_formset(self, request, obj=None, **kwargs):
+        self.parent_obj = obj
+        # import pdb; pdb.set_trace()
+        return super(CollectionMemberInline, self).get_formset(request, obj, **kwargs)
+
+ 
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        field = super(CollectionMemberInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        
+        if db_field.name == 'subcollection':
+            if request._obj_ is not None:
+                sc =  CollectionMember.objects.filter(subcollection__scheme=request._obj_.scheme).values_list('subcollection__id',flat=True)
+                field.queryset = field.queryset.filter(scheme=request._obj_.scheme).exclude(id__in=sc).exclude(id=request._obj_.id) 
+            else:
+                field.queryset = field.queryset.none()
+
+        return field
     
 class CollectionAdmin(admin.ModelAdmin):
+    list_filter = ('scheme',)
+    
+    def get_form(self, request, obj=None, **kwargs):
+        # just save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super(CollectionAdmin, self).get_form(request, obj, **kwargs)
+        
     inlines = [  CollectionMemberInline, ]
     pass
 

@@ -23,11 +23,12 @@ from django.contrib.contenttypes.models import ContentType
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
-from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field
+from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field, AttachedMetadata, makenode
 from rdflib import Graph,namespace
 from rdflib.term import URIRef, Literal
 import itertools
 import json
+
 
 PLACEHOLDER = '< no label >'
 
@@ -88,15 +89,12 @@ class SchemeManager(models.Manager):
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
 
-class SchemeMeta(models.Model):
+class SchemeMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
     subject      = models.ForeignKey('Scheme', related_name="metaprops") 
-    metaprop   =  models.ForeignKey(GenericMetaProp,verbose_name='property') 
-    value = models.CharField(_(u'value'),max_length=2000)
-    def __unicode__(self):
-        return unicode(self.metaprop)
+ 
         
 class Scheme(models.Model):
     objects = SchemeManager()
@@ -200,22 +198,6 @@ class Scheme(models.Model):
             tree.append((concept,children))     
         return tree, total, nleafs
         
-    def test_tree(self):
-        i = self.tree()
-        print i[0]
-        for j in i[1]:
-            print u'--' +unicode(j[0])
-            for k in j[1]:
-                print u'----' + unicode(k[0])
-                for l in k[1]:
-                    print u'------' + unicode(l[0])
-                    for m in l[1]:
-                        print u'--------' + unicode(m[0])         
-   
-                        for idx, val in enumerate(ints):
-                            print idx, val
-   
-    # needs fixing - has limited depth of traversal - probably want an option to paginate and limit.
     @staticmethod                      
     def _recurse_json_tree(obj_tree,prefix):
         """ takes a tree with a an object and a list of child objects and makes it into a json D3 tree with strings """
@@ -238,24 +220,6 @@ class Scheme(models.Model):
         i = self.tree()
         prefix = '/admin' if admin_url else ''
         ja_tree = Scheme._recurse_json_tree(i,prefix)
-        # ja_tree = {'name' : i[0].pref_label, 'children' : []}
-        # for jdx, j in enumerate(i[1]):#j[0] is a concept, j[1] a list of child concepts
-            # ja_tree['children'].append({'name':j[0].pref_label,
-                                        # 'url':prefix+'/skosxl/concept/'+str(j[0].id)+'/',
-                                        # 'children':[]})
-            # for kdx, k in enumerate(j[1]):
-                # ja_tree['children'][jdx]['children'].append({'name':k[0].pref_label,
-                                            # 'url':prefix+'/skosxl/concept/'+str(k[0].id)+'/',
-                                            # 'children':[]})
-                # for ldx,l in enumerate(k[1]):
-                    # ja_tree['children'][jdx]['children'][kdx]['children'].append({'name':l[0].pref_label,
-                                                # 'url':prefix+'/skosxl/concept/'+str(l[0].id)+'/',
-                                                # 'children':[]})
-                    # for mdx, m in enumerate(l[1]):
-                        # ja_tree['children'][jdx]['children'][kdx]['children'][ldx]['children'].append({'name':m[0].pref_label,
-                                                    # 'url':prefix+'/skosxl/concept/'+str(m[0].id)+'/',
-                                                    # #'children':[] #stop
-                                                    # })
         return json.dumps(ja_tree, sort_keys=True,
                           indent=4, separators=(',', ': '))
  
@@ -318,15 +282,12 @@ class ConceptRank(models.Model):
             missedRank = SemRelation.objects.filter(target_concept__rank__level__isnull=False, origin_concept__rank__level__isnull=True, rel_type=REL_TYPES.narrower).first()        
         
 
-class ConceptMeta(models.Model):
+class ConceptMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
-    subject       = models.ForeignKey("Concept", related_name="metaprops") 
-    metaprop   =  models.ForeignKey(GenericMetaProp, verbose_name='property') 
-    value = models.CharField(_(u'value'),max_length=2000,help_text=_(u'enclose a URL in <> to force encoding as a resource'))
-    def __unicode__(self):
-        return unicode(self.metaprop)        
+    subject       = models.ForeignKey("Concept", related_name="metaprops")     
+
             
 class ConceptManager(models.Manager):    
     def get_by_natural_key(self, uri):
@@ -457,7 +418,24 @@ class CollectionMember(models.Model):
         ordering = [ 'index', ]
         # check index is unique if present.. unique_together = (('scheme', 'term'),)
         pass
+    def clean(self):
+        if not ( self.concept or self.subcollection ) :
+            raise ValidationError(_('Either a Concept or Collection member must be specified'))
+            
+    def __unicode__(self):
+        if self.subcollection:
+            return "".join(('Subcollection:',self.subcollection.pref_label))
+        elif self.concept:
+            return "".join(('Concept:',self.concept.pref_label))
+        else:
+            return 'what the?'
 
+class CollectionMeta(AttachedMetadata):
+    """
+        extensible metadata using rdf_io managed reusable generic metadata properties
+    """
+    subject      = models.ForeignKey('Collection', related_name="metaprops") 
+             
 class Collection(models.Model):
     """ SKOS Collection """
     pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Collections only support single label currently'),max_length=255)
@@ -683,6 +661,8 @@ class ImportedConceptScheme(ImportedResource):
         target_map_concept = {
             URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#inScheme'):  {'ignore': True} ,
+            URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf'): {'ignore': True} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',0),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#altLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',1),)} ,
             URIRef(u'http://www.w3.org/2004/02/skos/core#hiddenLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',2),)} , 
@@ -727,7 +707,7 @@ class ImportedConceptScheme(ImportedResource):
 
         (scheme_obj,new) = schemeClass.objects.get_or_create(uri=target_scheme, defaults=schemeDefaults)
         scheme_obj.skip_post_save = True
-        related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme)
+        related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme, metapropClass=SchemeMeta)
         scheme_obj.save()
         # now process any related objects - concepts first then any collections
         # import pdb; pdb.set_trace()
@@ -771,7 +751,7 @@ class ImportedConceptScheme(ImportedResource):
                 concept_obj.rank, new  = ConceptRank.objects.get_or_create(scheme=scheme_obj, uri=rankuri, pref_label=rankname, level=rankdepth)
             
             # now all the rest of the properties
-            related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept)
+            related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,metapropClass=ConceptMeta)
             concept_obj.save()
             try:
                 _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
@@ -794,7 +774,7 @@ class ImportedConceptScheme(ImportedResource):
             col = row[0]
             try:
                 (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
-                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection)
+                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,metapropClass=None)
                 collection_obj.save()
                 # two passes - for related concepts and related collections
 
@@ -818,7 +798,7 @@ class ImportedConceptScheme(ImportedResource):
         return scheme_obj
     
     def getConcepts(self,s,gr):
-        found,conceptList = _has_items(gr.subjects(predicate=URIRef(u'http://www.w3.org/2004/02/skos#inScheme'), object=s))
+        found,conceptList = _has_items(gr.subjects(predicate=URIRef(u'http://www.w3.org/2004/02/skos/core#inScheme'), object=s))
         if not found:
             conceptList = gr.subjects(predicate=rdftype, object=concept)
         return conceptList
@@ -829,7 +809,7 @@ def _has_items(iterable):
     except StopIteration:
         return False, []
         
-def _set_object_properties(gr,uri,obj,target_map) : 
+def _set_object_properties(gr,uri,obj,target_map,metapropClass) : 
         """ sets object properties, and returns a list of related objects that need to be created if missing """
         
         # loop over scheme properties and set
@@ -850,9 +830,10 @@ def _set_object_properties(gr,uri,obj,target_map) :
                 else:
                     setattr(obj,prop['text_field'],unicode(o))
                     #print "setting ",prop['text_field'],unicode(o)
-            else:
-                #_insertMeta
-                continue                
+            elif metapropClass and p != rdftype and not o in (concept, scheme, collection ):
+                metaprop,created = GenericMetaProp.objects.get_or_create(uri=str(p))
+                metapropClass.objects.get_or_create(subject=obj, metaprop=metaprop, value=unicode(o))
+                               
         return related_objects
         
 def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,conceptClass,classDefaults) :                   
