@@ -127,9 +127,11 @@ class Scheme(models.Model):
         #import pdb; pdb.set_trace()
         return reverse('skosxl:scheme_detail', args=[self.slug])
         
-    def getCollectionGraphs(self):
-        """ builds a forest (list) of trees of Collections,starting at root nodes """ 
-        collections = Collection.objects.filter(scheme=self)
+    def getCollectionGraphs(self,**filters):
+        """ builds a forest (list) of trees of Collections,starting at root nodes 
+        
+        raises Validation Error if recursion found """ 
+        collections = Collection.objects.filter(scheme=self,**filters)
         tree = {}
         for col in collections:
             tree[ col.id ] = [col,[], True ]
@@ -145,25 +147,37 @@ class Scheme(models.Model):
         forest = []
         for node in tree:
             if tree[node][2] : # a root node
-                forest.append ( self._getMembers(tree, node) )
+                path = set() 
+                forest.append ( self._getMembers(tree, node, path) )
         return forest
 
     
-    def _getMembers(self,treedict,node):
+    
+    def _getMembers(self,treedict,node,path):
         tree = ( treedict[node][0], [])
+        path.add(node)
         for member in treedict[node][1]:
+ 
             if type(member) == Collection:
-                tree[1].append( self._getMembers(treedict, member.id) )
+                if member.id in path :
+                    # raise ValidationError(" Recursion discovered in Collections %s member %s has already been visited " % (node,member.id) )
+                    tree[1].append( (" Recursion discovered in Collections %s member %s %s has already been visited " % (node,member.id,str(member)) ,[] ))
+                else:
+                    tree[1].append( self._getMembers(treedict, member.id,path) )
             else:
                 tree[1].append( (member, []))
-             
+        path.remove(node)        
         return tree
         
     def tree(self):
         MAXLEAFS = 20
         #import pdb; pdb.set_trace()
         tree = (self, [])  # result is a tuple(scheme,[child concepts])
-        collections = self.getCollectionGraphs()
+        try:
+            collections = self.getCollectionGraphs()
+        except ValidationError as e :
+            collections = [( str(e), [] )]
+ 
         topConcepts, num, numleafs = self.getTopConcepts()
  
         if collections and topConcepts or numleafs < num and num > MAXLEAFS :
@@ -416,6 +430,7 @@ class CollectionMember(models.Model):
     subcollection = models.ForeignKey('Collection',related_name='subcollection', blank=True,null=True)
     class Meta :
         ordering = [ 'index', ]
+        unique_together = ['collection','concept','subcollection']
         # check index is unique if present.. unique_together = (('scheme', 'term'),)
         pass
     def clean(self):
