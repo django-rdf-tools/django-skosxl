@@ -4,6 +4,15 @@ from django.contrib.contenttypes.models import ContentType
 from skosxl.models import Scheme
 
 
+
+def loaddata(url_base):
+    """
+    run loading for module
+    """
+    load_base_namespaces(url_base)
+    load_rdf_mappings(url_base)
+    return ( {'stuff': 'yep'} )
+    
 def load_base_namespaces(url_base):
     """
         load namespaces for the meta model

@@ -28,11 +28,10 @@ def loadinit(req) :
     if req.GET.get('pdb') :
         import pdb; pdb.set_trace()
     url_base = req.build_absolute_uri("/");
-    for cfgname in ['rdf_io_mappings', 'urls_sissvoc'] :
+    loadlist = import_module('skosxl.fixtures.loadlist', 'skosxl.fixtures')
+    for cfgname in loadlist.INITIAL_FIXTURES :
         cm = import_module("".join(('skosxl.fixtures.',cfgname)), 'dataweb.fixtures')
-        messages['ns'] = cm.load_base_namespaces(url_base)
-        messages['rules'] = cm.load_urirules(url_base)
-        messages['rdf_io'] = cm.load_rdf_mappings(url_base)
+        messages.update( cm.loaddata(url_base) )
     return HttpResponse("loaded configurations:" + str(messages))  
 
 
