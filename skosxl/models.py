@@ -789,7 +789,7 @@ class ImportedConceptScheme(ImportedResource):
             col = row[0]
             try:
                 (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
-                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,metapropClass=None)
+                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,metapropClass=CollectionMeta)
                 collection_obj.save()
                 # two passes - for related concepts and related collections
 
@@ -845,9 +845,10 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                 else:
                     setattr(obj,prop['text_field'],unicode(o))
                     #print "setting ",prop['text_field'],unicode(o)
-            elif metapropClass and p != rdftype and not o in (concept, scheme, collection ):
+            elif metapropClass and not (p == rdftype and o in (concept, scheme, collection )):
+                #import pdb; pdb.set_trace()
                 metaprop,created = GenericMetaProp.objects.get_or_create(uri=str(p))
-                metapropClass.objects.get_or_create(subject=obj, metaprop=metaprop, value=unicode(o))
+                metapropClass.objects.get_or_create(subject=obj, metaprop=metaprop, value=o.n3())
                                
         return related_objects
         

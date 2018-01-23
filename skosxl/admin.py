@@ -202,7 +202,17 @@ class ConceptRankAdmin(FkAutocompleteAdmin):
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
 
-
+class CollectionMetaInline(InlineAutocompleteAdmin):
+    model = CollectionMeta
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('subject','metaprop','value')
+ #   list_display = ('pref_label',)
+    extra = 1
+    verbose_name = 'Additional property'
+    verbose_name_plural = 'Additional properties'
+    
 class CollectionMemberInlineForm(ModelForm):
     fields = ('index','concept','subcollection')
     class Meta:
@@ -250,13 +260,14 @@ class CollectionMemberInline(InlineAutocompleteAdmin):
     
 class CollectionAdmin(admin.ModelAdmin):
     list_filter = ('scheme',)
+    search_fields = ['pref_label','uri']    
     
     def get_form(self, request, obj=None, **kwargs):
         # just save obj reference for future processing in Inline
         request._obj_ = obj
         return super(CollectionAdmin, self).get_form(request, obj, **kwargs)
         
-    inlines = [  CollectionMemberInline, ]
+    inlines = [  CollectionMetaInline, CollectionMemberInline, ]
     pass
 
 admin.site.register(Collection, CollectionAdmin)

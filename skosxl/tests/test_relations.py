@@ -17,7 +17,10 @@ PREFIX = """@prefix dc: <http://purl.org/dc/elements/1.1/> .
 
 SCHEME1 = """
 test:scheme1 a skos:ConceptScheme ;
-    rdfs:label "Test concept scheme"@en.
+    rdfs:label "Test concept scheme"@en ;
+     test:meta1 "string", "string"@en, "string"^^test:datatype,"string2", "string2"@en, "string2"^^test:datatype , 1, 2.3;
+    test:meta2  "string", "string"@en ;
+    .
 """
 
 SCHEME2 = """
@@ -28,6 +31,8 @@ CONCEPT1 = """
 test:Concept_defaultlang a skos:Concept ;
     skos:prefLabel "A label in default language" ;
     skos:inScheme test:scheme1 ;
+    test:meta1 "string", "string"@en, "string"^^test:datatype,"string2", "string2"@en, "string2"^^test:datatype , 1, 2.3;
+    test:meta2  "string", "string"@en ;
     .
 
 """
@@ -52,19 +57,21 @@ COLLECTION1 = """
 test:Collection1 a skos:Collection ;
     skos:pref_label "Collection with Concept members" ;
     skos:member test:Concept ;
+    test:meta1 "string", "string"@en, "string"^^test:datatype,"string2", "string2"@en, "string2"^^test:datatype , 1, 2.3;
+    test:meta2  "string", "string"@en ;
     .
 """
 
 COLLECTION2 = """
 test:Collection2 a skos:Collection ;
-    skos:pref_label "Collection with Collection member" ;
+    skos:prefLlabel "Collection with Collection member" ;
     skos:member test:Collection1 ;
     .
 """
 
 COLLECTION3 = """
 test:Collection3 a skos:Collection ;
-    skos:pref_label "Collection with shared Collection members" ;
+    skos:prefLabel "Collection with shared Collection members" ;
     skos:member test:Collection1 ;
     .
 """
@@ -96,6 +103,7 @@ test:Collection6 a skos:Collection ;
 DAG_TEST = "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT2, COLLECTION1, COLLECTION2, COLLECTION3, COLLECTION4))
 CYCLE_TEST = "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT2, COLLECTION1, COLLECTION2, COLLECTION3, COLLECTION4, COLLECTION5, COLLECTION6))
 
+
 class CollectionTestCase(TestCase):
     """ Test case for importing a concept scheme """
     
@@ -103,15 +111,17 @@ class CollectionTestCase(TestCase):
         print "setup in CollectionTestCase"
         pass
         
-    def xtest_DAG(self):
+    def test_DAG(self):
         loadtest = ImportedConceptScheme(id=1, resource_type=ImportedConceptScheme.TYPE_INSTANCE, force_bulk_only=False, force_refresh=True)
         loadtest.file = SimpleUploadedFile('test.ttl', DAG_TEST )
         loadtest.save()
         cs = Scheme.objects.get(uri="http://example.org/scheme1")
         cols = cs.getCollectionGraphs()
-        print cols
+        #print cols
         Scheme.objects.all().delete()
-    
+        self.assertEqual ( str(cols).find('Recursion discovered in Collections'), -1)
+        
+        
     def test_tree_cycle_safe(self):
         #import pdb; pdb.set_trace()
         loadtest = ImportedConceptScheme(id=1, resource_type=ImportedConceptScheme.TYPE_INSTANCE, force_bulk_only=False, force_refresh=True)
@@ -119,6 +129,7 @@ class CollectionTestCase(TestCase):
         loadtest.save()
         cs = Scheme.objects.get(uri="http://example.org/scheme1")
         cols = cs.getCollectionGraphs()
-        print cols
+        # print cols
         Scheme.objects.all().delete()
-        
+        self.assertNotEqual ( str(cols).find('Recursion discovered in Collections'), -1)
+     

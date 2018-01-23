@@ -47,7 +47,25 @@ test:Concept_specificlang a skos:Concept ;
     .
 
 """
-SUITE_TEST = "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT2))
+
+COLLECTION1 = """
+test:Collection1 a skos:Collection ;
+    skos:prefLabel "Collection with Concept members" ;
+    skos:member test:Concept ;
+    test:meta1 "string", "string"@en, "string"^^test:datatype,"string2", "string2"@en, "string2"^^test:datatype , 1, 2.3;
+    test:meta2  "string", "string"@en ;
+    .
+"""
+
+COLLECTION2 = """
+test:Collection2 a skos:Collection ;
+    skos:prefLabel "Collection with Collection member" ;
+    skos:member test:Collection1 ;
+    .
+"""
+
+
+SUITE_TEST = "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT2, COLLECTION1))
 
 class SchemeImportTestCase(TestCase):
     """ Test case for importing a concept scheme """
@@ -107,4 +125,15 @@ class ConceptDetailsTestCase(TestCase):
         l = Label.objects.get(concept__term="Concept_specificlang", language="fr")
         self.assertEqual(l.language, "fr")
         
-#    def test_metaprops(self):        
+    def test_preflabel_specificlang(self):
+        """ tests a pref label is set using the default language if lang not specified """
+        l = Label.objects.get(concept__term="Concept_specificlang", language="fr")
+        self.assertEqual(l.language, "fr")
+        
+    def test_metaprops(self):
+        
+        metaprops = CollectionMeta.objects.filter(subject__uri="http://example.org/Collection1")
+        
+        self.assertEqual ( len(metaprops.filter(metaprop__uri='http://example.org/meta1')), 8 )
+        self.assertEqual ( len(metaprops.filter(metaprop__uri='http://example.org/meta2')), 2 )
+        
