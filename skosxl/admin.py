@@ -16,6 +16,26 @@ from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompl
 #     related_search_fields = {'label' : ('name','slug')}
 #     extra=1
 #     
+
+class OwnedSchemeListFilter(admin.SimpleListFilter):
+    title=_('Concept Scheme')
+    parameter_name = 'scheme_id'
+    
+    def lookups(self, request, model_admin):
+        if request.user.is_superuser:
+            schemes = Scheme.objects.all()
+        else:  
+            schemes = Scheme.objects.filter(authgroup__in=request.user.groups.all())        
+        return [(c.id, c.pref_label) for c in schemes]
+        
+    def queryset(self, request, qs):
+        try:
+            qs= qs.filter(scheme__id=request.GET['scheme_id'])
+        except:
+            pass
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(scheme__authgroup__in=request.user.groups.all()) 
     
 class LabelInline(InlineAutocompleteAdmin):
     model = Label
@@ -79,7 +99,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
     search_fields = ['term','uri','pref_label','slug','definition', 'rank__pref_label']
     list_display = ('term','pref_label','uri','scheme','top_concept','rank')
     #list_editable = ('status','term','scheme','top_concept')
-    list_filter = ('scheme','status')
+    list_filter=(OwnedSchemeListFilter,'status')
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
     # def change_view(self, request, object_id, extra_context=None):
@@ -119,7 +139,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
         
     def changelist_view(self, request, extra_context=None):
         try :
-            scheme_id = int(request.GET['scheme__id__exact'])
+            scheme_id = int(request.GET['scheme_id'])
         except KeyError :
             scheme_id = None # FIXME: if no scheme filter is called, get the first (or "General") : a fixture to create one ?
         return super(ConceptAdmin, self).changelist_view(request, 
@@ -136,6 +156,11 @@ class ConceptAdmin(FkAutocompleteAdmin):
         actions.update(dict(create_action(s) for s in Scheme.objects.all()))
         return actions
 
+    def get_queryset(self, request):
+        qs = super(ConceptAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Concept, ConceptAdmin)
 
 
@@ -175,10 +200,15 @@ class LabelAdmin(FkAutocompleteAdmin):
 #    actions = [create_concept_command]
     #list_editable = ('name','slug')
     search_fields = ['label_text',]    
-
+    def get_queryset(self, request):
+        qs = super(LabelAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(concept__scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Label, LabelAdmin)
 
 class SchemeBase(Scheme):
+    verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
     class Meta:
         proxy = True
 
@@ -186,10 +216,21 @@ class SchemeBase(Scheme):
 class SchemeAdmin(FkAutocompleteAdmin):
     readonly_fields = ('created','modified')
     inlines = [  SchemeMetaInline, ]  
+    model=SchemeBase
+    search_fields = ['pref_label','uri',]
+    verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
+    def get_queryset(self, request):
+        qs = super(SchemeAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(authgroup__in=request.user.groups.all())
+
 admin.site.register(SchemeBase, SchemeAdmin)
 
+    
 
-class SchemeConceptAdmin(FkAutocompleteAdmin):
+class SchemeConceptAdmin(SchemeAdmin):
+    
     readonly_fields = ('created','modified')
     inlines = [  SchemeMetaInline, ConceptInline, ]
   
@@ -259,13 +300,19 @@ class CollectionMemberInline(InlineAutocompleteAdmin):
         return field
     
 class CollectionAdmin(admin.ModelAdmin):
-    list_filter = ('scheme',)
+    list_filter=(OwnedSchemeListFilter,)
     search_fields = ['pref_label','uri']    
     
     def get_form(self, request, obj=None, **kwargs):
         # just save obj reference for future processing in Inline
         request._obj_ = obj
         return super(CollectionAdmin, self).get_form(request, obj, **kwargs)
+    
+    def get_queryset(self, request):
+        qs = super(CollectionAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(scheme__authgroup__in=request.user.groups.all())
         
     inlines = [  CollectionMetaInline, CollectionMemberInline, ]
     pass

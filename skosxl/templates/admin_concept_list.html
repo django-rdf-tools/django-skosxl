@@ -1,7 +1,7 @@
 {% extends "admin/change_list.html" %}
 {% block content %}
 
-
+{% if scheme_id %}
 <div id="chart" class="gallery">
 </div>
 
@@ -17,6 +17,7 @@
 <script type="text/javascript">
   
 </script>
+{% endif %}
 {{ block.super }}
 
 {% endblock %}

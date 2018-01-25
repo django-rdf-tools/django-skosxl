@@ -15,7 +15,7 @@ from extended_choices import Choices
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 # update this to use customisable setting
-# from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
 from django.conf import settings
 from django.db.models.signals import post_save
 
@@ -106,6 +106,8 @@ class Scheme(models.Model):
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
     definition  = models.TextField(_(u'definition'), blank=True)
+    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_(u'Authorised maintainers'),
+        help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
     
     # metaprops = models.ManyToManyField(
     
@@ -125,7 +127,7 @@ class Scheme(models.Model):
         
     def get_absolute_url(self):
         #import pdb; pdb.set_trace()
-        return reverse('skosxl:scheme_detail', args=[self.slug])
+        return reverse('skosxl:scheme_detail', args=[self.id])
         
     def getCollectionGraphs(self,**filters):
         """ builds a forest (list) of trees of Collections,starting at root nodes 
@@ -500,6 +502,9 @@ class Label(models.Model):
     '''
     # FIELDS name and slug are defined in TagBase  - they are forced to be unique
     # so if a concept is to be made available as a tag then it must conform to this constraint - generating a label without a Concept implies its is a tag generation - and name will be forced to be unique.
+    # temporary replacement while disconected from taggit..
+    slug        = exfields.AutoSlugField(populate_from=('label_text'))
+
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
     label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
@@ -516,7 +521,8 @@ class Label(models.Model):
     altlabels= AltLabelManager()
     
     def get_absolute_url(self):
-        return reverse('tag_detail', args=[self.slug])
+        #import pdb; pdb.set_trace()
+        return reverse('skosxl:tag_detail', args=[self.id])
     def __unicode__(self):
          return unicode(self.label_text)
     def create_concept_from_label(self):

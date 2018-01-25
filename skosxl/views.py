@@ -85,10 +85,10 @@ SELECT ?label ?uri WHERE {
                             content_type="application/json")
 
 
-def scheme_detail(request,slug):
+def scheme_detail(request,id):
     context = {}
 #    import pdb; pdb.set_trace()
-    scheme = Scheme.objects.get(slug=slug)
+    scheme = Scheme.objects.get(id=id)
     context['object'] = scheme
     context['concepts'] = Concept.objects.filter(scheme=scheme)
     return render_to_response('scheme_detail.html',context,RequestContext(request))
@@ -103,9 +103,9 @@ def concept_detail(request,id):
     return render_to_response('concept_detail.html',context,RequestContext(request))
 
 
-def tag_detail(request,slug):
+def tag_detail(request,id):
     context = {}
-    tag = Label.objects.get(slug=slug)
+    tag = Label.objects.get(id=id)
     context['object'] = tag
     # example
     # context['initiatives'] = Initiative.objects.filter(tags=tag)
