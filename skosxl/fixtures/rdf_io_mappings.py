@@ -48,7 +48,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=sm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
     am = AttributeMapping(scope=sm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
      
-    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
+    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True).save()
     # specific mapping
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
@@ -56,7 +56,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="collection.subcollection.uri", predicate="skos:member", is_resource=True).save()
     
     # chain collection mapping to ConceptScheme parent
-    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
     pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
@@ -79,12 +79,12 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
     
 #    chain concept mapping to ConceptScheme parent
-    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
     pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
  #    chain concept mapping to ConceptScheme parent
-    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
 
  
