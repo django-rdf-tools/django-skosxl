@@ -106,6 +106,7 @@ class Scheme(models.Model):
     created     = exfields.CreationDateTimeField(_(u'created'),null=True)
     modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
     definition  = models.TextField(_(u'definition'), blank=True)
+    changenote = models.TextField(_(u'change note'), blank=True)
     authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_(u'Authorised maintainers'),
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
     
@@ -728,6 +729,7 @@ class ImportedConceptScheme(ImportedResource):
 
         (scheme_obj,new) = schemeClass.objects.get_or_create(uri=target_scheme, defaults=schemeDefaults)
         scheme_obj.skip_post_save = True
+        scheme_obj.changenote = "Bulk import via SKOSXL manager on %s by %s from source %s" % ( str(self.uploaded_at), 'superuser', self.file.name if self.file else self.remote ) 
         related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme, metapropClass=SchemeMeta)
         scheme_obj.save()
         # now process any related objects - concepts first then any collections

@@ -41,17 +41,13 @@ def load_rdf_mappings(url_base):
     """
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:ConceptScheme", defaults = { "label" : "SKOS ConceptScheme" })
 
-    pm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" )
+    pm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
     # specific mapping
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
     
-    # this needs further testing - especially about resource vs literal values.
-    #am = AttributeMapping(scope=pm, attr="schememeta.value", predicate="schememeta.metaprop", is_resource=False).save()
-  
-    #(object_type,created) = ObjectType.objects.get_or_create(uri="qb:CodedProperty", defaults = { "label" : "RDF Datacube Coded Property" })
-
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
     pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
@@ -75,13 +71,11 @@ def load_rdf_mappings(url_base):
     pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
     
-    
-#    (object_type,created) = ObjectType.objects.get_or_create(uri="void:Dataset", defaults = { "label" : "VoiD Dataset" })
 
  
-def new_mapping(object_type,content_type_label, title, idfield, tgt,filter=None):
+def new_mapping(object_type,content_type_label, title, idfield, tgt,filter=None, auto_push=False):
     content_type = ContentType.objects.get(app_label="skosxl",model=content_type_label.lower())
-    defaults =         { "auto_push" : True , 
+    defaults =         { "auto_push" : auto+push , 
           "id_attr" : idfield,
           "target_uri_expr" : tgt,
           "content_type" : content_type
