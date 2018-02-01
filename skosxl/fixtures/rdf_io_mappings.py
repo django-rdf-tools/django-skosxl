@@ -1,5 +1,5 @@
 
-from rdf_io.models import Namespace, ObjectType,ObjectMapping,AttributeMapping 
+from rdf_io.models import Namespace, ObjectType,ObjectMapping,AttributeMapping , ChainedMapping
 from django.contrib.contenttypes.models import ContentType
 from skosxl.models import Scheme
 
@@ -41,12 +41,22 @@ def load_rdf_mappings(url_base):
     """
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:ConceptScheme", defaults = { "label" : "SKOS ConceptScheme" })
 
-    pm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
+    sm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
     # specific mapping
-    am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
+    am = AttributeMapping(scope=sm, attr="definition", predicate="skos:definition", is_resource=False).save()
+    am = AttributeMapping(scope=sm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
+    am = AttributeMapping(scope=sm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
+    am = AttributeMapping(scope=sm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
+     
+    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
+    # specific mapping
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
-    am = AttributeMapping(scope=pm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
+    am = AttributeMapping(scope=pm, attr="collectionmember.concept.uri", predicate="skos:member", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="collection.subcollection.uri", predicate="skos:member", is_resource=True).save()
+    
+    # chain collection mapping to ConceptScheme parent
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
     
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
     pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
@@ -67,15 +77,20 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='4'].uri", predicate="skos:relatedMatch", is_resource=True).save()
  
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
-     
+    
+#    chain concept mapping to ConceptScheme parent
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
+    
     pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
+ #    chain concept mapping to ConceptScheme parent
+    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm )
     
 
  
 def new_mapping(object_type,content_type_label, title, idfield, tgt,filter=None, auto_push=False):
     content_type = ContentType.objects.get(app_label="skosxl",model=content_type_label.lower())
-    defaults =         { "auto_push" : auto+push , 
+    defaults =         { "auto_push" : auto_push , 
           "id_attr" : idfield,
           "target_uri_expr" : tgt,
           "content_type" : content_type
