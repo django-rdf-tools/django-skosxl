@@ -14,5 +14,5 @@ from skosxl.models import Scheme
 def loaddata(url_base):
     config,created = ConfigVar.objects.update_or_create(var='INFERREPO',defaults={'value':'skos_inferencer'})
     config,created = ConfigVar.objects.update_or_create(var='DEFAULTREPO',defaults={'value':'test'})
-    config,created = ConfigVar.objects.update_or_create(var='RDFSERVER',defaults={'value':'http://ogc:8080'})
+    config,created = ConfigVar.objects.update_or_create(var='RDFSERVER',defaults={'value':'http://localhost:8080'})
     return ( {'configs': '3 vars set'} )

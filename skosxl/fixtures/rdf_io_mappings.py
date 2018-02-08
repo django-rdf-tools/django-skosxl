@@ -23,6 +23,7 @@ def load_base_namespaces(url_base):
     Namespace.objects.get_or_create( uri='http://www.w3.org/2008/05/skos-xl#', defaults = { 'prefix' : 'skosxl' , 'notes': 'SKOSXL' } )
     Namespace.objects.get_or_create( uri='http://xmlns.com/foaf/0.1/', defaults = { 'prefix' : 'foaf' , 'notes': 'FOAF' } )
     Namespace.objects.get_or_create( uri='http://purl.org/dc/terms/', defaults = { 'prefix' : 'dct' , 'notes': 'Dublin Core Terms' } )
+    Namespace.objects.get_or_create( uri='http://purl.org/dc/elements/1.1/', defaults = { 'prefix' : 'dc' , 'notes': 'Dublin Core Elements' } ) 
     Namespace.objects.get_or_create( uri='http://www.w3.org/ns/dcat#', defaults = { 'prefix' : 'dcat' , 'notes': 'DCAT' } )
     Namespace.objects.get_or_create( uri='http://www.w3.org/2001/XMLSchema#', defaults = { 'prefix' : 'xsd' , 'notes': 'XSD' } )
 
@@ -56,7 +57,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="collection.subcollection.uri", predicate="skos:member", is_resource=True).save()
     
     # chain collection mapping to ConceptScheme parent
-    cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
+    cm = ChainedMapping(scope=sm,attr="collection",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
     pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
