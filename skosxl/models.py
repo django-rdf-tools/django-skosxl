@@ -442,7 +442,7 @@ class CollectionMember(models.Model):
             
     def __unicode__(self):
         if self.subcollection:
-            return "".join(('Subcollection:',self.subcollection.pref_label))
+            return "".join(('Subcollection:',self.subcollection.pref_label if self.subcollection.pref_label else 'No label'))
         elif self.concept:
             return "".join(('Concept:',self.concept.pref_label))
         else:
@@ -790,7 +790,7 @@ class ImportedConceptScheme(ImportedResource):
         else :
             topConcepts = gr.objects(predicate=hasTopConcept, subject=s)
             for tc in topConcepts :
-                Concept.objects.get(uri=str(tc)).update(top_concept=True) 
+                Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace()               
         # now process collections
         for row in gr.query("SELECT DISTINCT ?collection WHERE {   ?collection a skos:Collection . {?collection skos:member ?member } UNION {?collection skos:memberList ?member } }" ):
