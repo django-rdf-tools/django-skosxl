@@ -49,7 +49,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=sm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
     am = AttributeMapping(scope=sm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
      
-    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True).save()
+    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
     # specific mapping
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
