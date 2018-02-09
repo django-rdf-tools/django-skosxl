@@ -4,6 +4,7 @@ from skosxl.models import *
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 from itertools import chain
+from rdf_io.views import publish_set
 
 from django.forms import ModelForm
 
@@ -207,8 +208,14 @@ class LabelAdmin(FkAutocompleteAdmin):
         return qs.filter(concept__scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Label, LabelAdmin)
 
+def publish_rdf(modeladmin, request, queryset):
+    publish_set(queryset,'scheme')
+        
+publish_rdf.short_description = "Publish selected Schemes using configured service bindings"       
+
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
+    actions= [publish_rdf,]
     class Meta:
         proxy = True
 
@@ -218,6 +225,7 @@ class SchemeAdmin(FkAutocompleteAdmin):
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
     search_fields = ['pref_label','uri',]
+    actions= [publish_rdf,]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     def get_queryset(self, request):
         qs = super(SchemeAdmin, self).get_queryset(request)
