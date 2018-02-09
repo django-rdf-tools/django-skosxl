@@ -26,6 +26,7 @@ def load_base_namespaces(url_base):
     Namespace.objects.get_or_create( uri='http://purl.org/dc/elements/1.1/', defaults = { 'prefix' : 'dc' , 'notes': 'Dublin Core Elements' } ) 
     Namespace.objects.get_or_create( uri='http://www.w3.org/ns/dcat#', defaults = { 'prefix' : 'dcat' , 'notes': 'DCAT' } )
     Namespace.objects.get_or_create( uri='http://www.w3.org/2001/XMLSchema#', defaults = { 'prefix' : 'xsd' , 'notes': 'XSD' } )
+    Namespace.objects.get_or_create( uri='http://www.w3.org/2002/07/owl#', defaults = { 'prefix' : 'owl' , 'notes': 'OWL' } )
 
     Namespace.objects.get_or_create( uri='http://id.sirf.net/def/schema/lid/', defaults = { 'prefix' : 'lid' , 'notes': 'LID - allows characterisation of resources such as VoiD:technicalFeatures against Linked Data API view names' } )
     print "loading base namespaces"
@@ -49,12 +50,13 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=sm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
     am = AttributeMapping(scope=sm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
      
+    (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Collection", defaults = { "label" : "SKOS Collection" })
     pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
     # specific mapping
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="collectionmember.concept.uri", predicate="skos:member", is_resource=True).save()
-    am = AttributeMapping(scope=pm, attr="collection.subcollection.uri", predicate="skos:member", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="collectionmember.subcollection.uri", predicate="skos:member", is_resource=True).save()
     
     # chain collection mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="collection",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
