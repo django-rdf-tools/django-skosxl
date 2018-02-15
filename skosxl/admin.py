@@ -148,7 +148,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
             
     fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept','definition')}),
                     (_(u'Meta-data'),
-                    {'fields':('prefStyle','changenote','created','modified'),
+                    {'fields':('status','prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
     inlines = [   ConceptMetaInline , NotationInline, LabelInline, RelInline, SKOSMappingInline]
@@ -212,6 +212,8 @@ def publish_rdf(modeladmin, request, queryset):
     publish_set(queryset,'scheme')
         
 publish_rdf.short_description = "Publish selected Schemes using configured service bindings"       
+
+
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
@@ -327,7 +329,19 @@ class CollectionAdmin(admin.ModelAdmin):
 
 admin.site.register(Collection, CollectionAdmin)
 
+class DerivedSchemesInline(admin.TabularInline):
+    readonly_fields = ('label',)
+    model = ImportedConceptScheme.schemes.through
+    fields = ('label',)
+    extra = 0
+    can_delete = False
+    def label(self,instance):
+        return '<a href="../../../scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label)
+    label.allow_tags = True
+    
 class ImportedConceptSchemeAdmin(admin.ModelAdmin):
+   
+    inlines = [  DerivedSchemesInline , ]
     pass
 
 admin.site.register(ImportedConceptScheme, ImportedConceptSchemeAdmin)

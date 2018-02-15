@@ -77,7 +77,7 @@ DEFAULT_LANG = getattr(settings, 'SKOSXL_DEFAULT_LANG', 'en')
 REVIEW_STATUS = Choices(
     ('active',  0,  _(u'Active')),
     ('draft',   1,  _(u'Draft')),
-    ('doubled', 2,  _(u'Double')),
+    ('doubled', 2,  _(u'Duplicate')),
     ('dispute', 3,  _(u'Dispute')),
     ('todo',    4,  _(u'Not classified')),
 )
@@ -114,6 +114,11 @@ class Scheme(models.Model):
     
     def __unicode__(self):
         return self.pref_label
+        
+    def save(self,*args,**kwargs):
+        if not self.pref_label :
+            self.pref_label = str(self.uri)
+        super(Scheme, self).save(*args,**kwargs)
         
     def bulk_save(self):
         """ turns back on processing of signals and re-saves object - to trigger suppressed post-saves """
@@ -625,16 +630,17 @@ class MapRelation(models.Model):
 #     
 
 
-rdftype=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
-concept=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
-scheme=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
-collection=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
-hasTopConcept=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
+RDFTYPE_NODE=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+CONCEPT_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
+SCHEME_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
+COLLECTION_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
+HASTOPCONCEPT_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
 
 
 class ImportedConceptScheme(ImportedResource):
 
     target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
+    import_all = models.BooleanField(default=True, verbose_name=(_(u'Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
     force_bulk_only = models.BooleanField(default=False, verbose_name=(_(u'bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
     force_refresh = models.BooleanField(default=False, verbose_name=(_(u'force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
     rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_(u'property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
@@ -642,6 +648,8 @@ class ImportedConceptScheme(ImportedResource):
     rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_(u'property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
     rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy. skos:topConcept will be ignored, and nodes matching this wil be set as topConcept.')
 
+    schemes = models.ManyToManyField(Scheme, blank=True, verbose_name=(_(u'Concept Schemes derived from this resource')))
+    
     importerrors = []
     
     def save(self,*args,**kwargs):  
@@ -655,15 +663,16 @@ class ImportedConceptScheme(ImportedResource):
         else:
             super(ImportedConceptScheme, self).save(*args,**kwargs)
         if type(self) == ImportedConceptScheme :
-        
-            scheme_obj = self.importScheme(self.get_graph(),self.target_scheme, self.force_refresh)
+            scheme_obj = self.importSchemes(self.get_graph(),self.target_scheme, self.force_refresh)
+            # update any references to imported schemes
+            super(ImportedConceptScheme, self).save(*args,**kwargs)
         
     class Meta: 
         verbose_name = _(u'ImportedConceptScheme')
         verbose_name_plural = _(u'ImportedConceptScheme')
 
-    def importScheme(self,gr, target_scheme, force_refresh, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
-        """ Import a concept scheme from a parsed RDF graph 
+    def importSchemes(self,gr, target_scheme, force_refresh, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
+        """ Import a single or set of concept schemes from a parsed RDF graph 
         
         Uses generic RDF graph management to avoid having to do consistency checks and resource management here.
         Will generate the target ConceptScheme if not present.
@@ -671,8 +680,32 @@ class ImportedConceptScheme(ImportedResource):
         """
         if not gr:
             raise Exception ( _(u'No RDF graph available for resource'))
-        
         self.importerrors = []
+        self.schemes.all().delete()
+        if not target_scheme:
+            s = None
+            for conceptscheme in gr.subjects(predicate=RDFTYPE_NODE, object=SCHEME_NODE) :
+                if not self.import_all :
+                    raise Exception('Multiple concept schemes found in source document - specify target first')
+                target_scheme = str(conceptscheme)
+                s = conceptscheme
+                scheme = self.importScheme(gr, target_scheme, force_refresh ,s,schemeClass, conceptClass,schemeDefaults, classDefaults)
+                self.schemes.add(scheme)
+            if not s:
+                raise Exception('No concept schemes found in source document - specify target first')
+        else:
+            s = URIRef(target_scheme)
+            scheme = self.importScheme(gr, target_scheme, force_refresh ,s ,schemeClass, conceptClass,schemeDefaults, classDefaults )
+            self.schemes.add(scheme)
+
+    def importScheme(self,gr, target_scheme,  force_refresh, schemegraph, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
+        """ Import a single or set of concept schemes from a parsed RDF graph 
+        
+        Uses generic RDF graph management to avoid having to do consistency checks and resource management here.
+        Will generate the target ConceptScheme if not present.
+        Push to triple store is via the post_save triggers and RDF_IO mappings if defined.
+        """
+        
         target_map_scheme = {
             URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
             URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
@@ -712,29 +745,21 @@ class ImportedConceptScheme(ImportedResource):
         if not self.rankTopName :
                 target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
         
-        if not target_scheme:
-            s = None
-            for conceptscheme in gr.subjects(predicate=rdftype, object=scheme) :
-                if target_scheme :
-                    raise Exception('Multiple concept schemes found in source document - specify target first')
-                target_scheme = str(conceptscheme)
-                s = conceptscheme
-            if not s:
-                raise Exception('No concept schemes found in source document - specify target first')
-        else:
-            s = URIRef(target_scheme)
-            
+        
+        if not gr:
+            raise Exception ( _(u'No RDF graph available for resource'))
+             
         if force_refresh :
             Scheme.objects.filter(uri=target_scheme).delete()
 
         (scheme_obj,new) = schemeClass.objects.get_or_create(uri=target_scheme, defaults=schemeDefaults)
         scheme_obj.skip_post_save = True
         scheme_obj.changenote = "Bulk import via SKOSXL manager on %s by %s from source %s" % ( str(self.uploaded_at), 'superuser', self.file.name if self.file else self.remote ) 
-        related_objects = _set_object_properties(gr=gr,uri=s,obj=scheme_obj,target_map=target_map_scheme, metapropClass=SchemeMeta)
+        related_objects = _set_object_properties(gr=gr,uri=schemegraph,obj=scheme_obj,target_map=target_map_scheme, metapropClass=SchemeMeta)
         scheme_obj.save()
         # now process any related objects - concepts first then any collections
-        # import pdb; pdb.set_trace()
-        for c in self.getConcepts(s,gr):
+        #import pdb; pdb.set_trace()
+        for c in self.getConcepts(schemegraph,gr):
             url = str(c)
             try: 
                 term=url[ url.rindex('#')+1:]
@@ -788,7 +813,7 @@ class ImportedConceptScheme(ImportedResource):
             # and also any sub-trees whose roots start below this level
             Concept.objects.filter(scheme=scheme_obj,top_concept=False,rank__isnull=False).exclude(rel_origin__rel_type=REL_TYPES.broader).update(top_concept=True)
         else :
-            topConcepts = gr.objects(predicate=hasTopConcept, subject=s)
+            topConcepts = gr.objects(predicate=HASTOPCONCEPT_NODE, subject=schemegraph)
             for tc in topConcepts :
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace()               
@@ -823,7 +848,7 @@ class ImportedConceptScheme(ImportedResource):
     def getConcepts(self,s,gr):
         found,conceptList = _has_items(gr.subjects(predicate=URIRef(u'http://www.w3.org/2004/02/skos/core#inScheme'), object=s))
         if not found:
-            conceptList = gr.subjects(predicate=rdftype, object=concept)
+            conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
         return conceptList
         
 def _has_items(iterable):
@@ -853,7 +878,7 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                 else:
                     setattr(obj,prop['text_field'],unicode(o))
                     #print "setting ",prop['text_field'],unicode(o)
-            elif metapropClass and not (p == rdftype and o in (concept, scheme, collection )):
+            elif metapropClass and not (p == RDFTYPE_NODE and o in (CONCEPT_NODE, SCHEME_NODE, COLLECTION_NODE )):
                 #import pdb; pdb.set_trace()
                 metaprop,created = GenericMetaProp.objects.get_or_create(uri=str(p))
                 metapropClass.objects.get_or_create(subject=obj, metaprop=metaprop, value=o.n3())
