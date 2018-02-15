@@ -20,11 +20,44 @@ The label management part of this app was originally built around django-taggit,
 
 The django admin site allows an administrator to link labels to concepts and model its SKOS concept tree. 
 
+
+
+
 Funky extras
 -----------
-This module can be used in conjunction with the django-rdf-io [https://github.com/rob-metalinkage/django-rdf-io] module to populate an RDF store with the vocabularies. The RDF store (or potentially another helper managed by the rdf_io module) can then perform all the reasoning to fill in all the implied transitive relationships or do other useful work. 
+This module can be used in conjunction with the django-rdf-io [https://github.com/rob-metalinkage/django-rdf-io] module to populate an RDF store with the vocabularies. A default mappings is provided, which can be loaded using the 
+management API /skosxl/manage/init.
+
+The RDF store (or potentially another helper managed by the rdf_io module) can then perform all the reasoning to fill in all the implied transitive relationships or do other useful work. 
 
 Bulk import of RDF SKOS files is now handled via RDF_IO module, extended by the SKOSXL.ImportedConceptScheme object.  
+
+Some initial visualisation based on the D3 javascript library is embedded.
+
+Authority/registry control
+--------------------------
+
+Concept schemes are the basis for delegating authority to manage SKOS assets.  Additional applications with finer-grained control can be added if required.
+
+Concept schemes may be optionally bound to a standard django user Group. Users must have "isStaff" attributes turned on to access the django admin interface provided. Access to Schemes, Concepts, Labels and Collections
+is all controlled by these access. 
+
+Concepts have an inbuilt publication review status, (Active, Draft, Duplicate, Dispute, Not classified) which may be linked to a final status via custom RDF-IO mappings.  Alternatively, extensible "Generic Metadata Properties" may be attached to each Concept to provide an explicit status.
+At this stage no workflow logic is enforced using these values.
+
+Managing a coherent RDF repository
+----------------------------------
+
+Because SKOS vocabularies may be imported from different sources, and attached metadata properties may be extensive, the question arises around coherence of a managed RDF repository. 
+
+The key issue is namespace management - namespaces are URIs - if the same URI exists in multiple sources these need to be consistent with each other.  Namespaces can be registered in the RDF_IO.namespaces module
+to bind a preferred prefix - this affects data output - input data may use any prefix, as per the RDF standards.
+
+Generic metadata properties will have CURIE forms (prefix:term) only if a namespace is registered. These can be bulk updated in the admin form by selecting a set of properties in "/admin/rdf_io/genericmetaprop/" and
+applying the provided action "update selected metaprops to use CURIEs" - this will match all selected properties to the registered namespaces an update any for which a namespace prefix is available.
+
+Actions on the ConceptScheme allow a selected set of ConceptSchemes to be published to via configured service chains (typically via RDF inferencing stores to target persistence stores).
+
 
 TODO
 ----
