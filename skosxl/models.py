@@ -639,6 +639,11 @@ HASTOPCONCEPT_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
 
 class ImportedConceptScheme(ImportedResource):
 
+    
+    def __init__(self, *args, **kwargs):     
+        super(ImportedConceptScheme, self).__init__(*args, **kwargs)
+        self.resource_type = ImportedResource.TYPE_RULE
+        
     target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
     import_all = models.BooleanField(default=True, verbose_name=(_(u'Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
     force_bulk_only = models.BooleanField(default=False, verbose_name=(_(u'bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
@@ -665,7 +670,9 @@ class ImportedConceptScheme(ImportedResource):
         if type(self) == ImportedConceptScheme :
             scheme_obj = self.importSchemes(self.get_graph(),self.target_scheme, self.force_refresh)
             # update any references to imported schemes
+            print self.schemes.all()
             super(ImportedConceptScheme, self).save(*args,**kwargs)
+            print self.schemes.all()
         
     class Meta: 
         verbose_name = _(u'ImportedConceptScheme')
@@ -681,7 +688,7 @@ class ImportedConceptScheme(ImportedResource):
         if not gr:
             raise Exception ( _(u'No RDF graph available for resource'))
         self.importerrors = []
-        self.schemes.all().delete()
+        self.schemes.clear()
         if not target_scheme:
             s = None
             for conceptscheme in gr.subjects(predicate=RDFTYPE_NODE, object=SCHEME_NODE) :
@@ -697,6 +704,7 @@ class ImportedConceptScheme(ImportedResource):
             s = URIRef(target_scheme)
             scheme = self.importScheme(gr, target_scheme, force_refresh ,s ,schemeClass, conceptClass,schemeDefaults, classDefaults )
             self.schemes.add(scheme)
+        
 
     def importScheme(self,gr, target_scheme,  force_refresh, schemegraph, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
         """ Import a single or set of concept schemes from a parsed RDF graph 

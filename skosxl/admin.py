@@ -341,7 +341,7 @@ class DerivedSchemesInline(admin.TabularInline):
     label.allow_tags = True
     
 class ImportedConceptSchemeAdmin(admin.ModelAdmin):
-   
+    exclude = [ 'resource_type', 'target_repo', 'schemes']
     inlines = [  DerivedSchemesInline , ]
     pass
 
