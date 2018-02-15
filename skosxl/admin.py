@@ -229,6 +229,7 @@ class SchemeAdmin(FkAutocompleteAdmin):
     search_fields = ['pref_label','uri',]
     actions= [publish_rdf,]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
+    list_filter=('importedconceptscheme__description',)
     def get_queryset(self, request):
         qs = super(SchemeAdmin, self).get_queryset(request)
         if request.user.is_superuser:
