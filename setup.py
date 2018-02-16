@@ -31,7 +31,8 @@ setup(
                         'SPARQLWrapper>=1.5.0',
                         'django-extensions>=0.7.1',
                         'django-admin-tools>=0.4.1',
-                        'django-extended-choices'
+                        'django-extended-choices',
+                        'django-model-utils,
                         ],
     dependency_links = [
         'https://github.com/flupke/django-taggit-templatetags.git#egg=taggit_templatetags',
