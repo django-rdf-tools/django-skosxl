@@ -12,6 +12,7 @@ from django_extensions.db import fields as exfields
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext_lazy
 from extended_choices import Choices
+from model_utils import FieldTracker
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 # update this to use customisable setting
@@ -324,6 +325,7 @@ class Concept(models.Model):
     slug        = exfields.AutoSlugField(populate_from=('term'))
     pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
 
+    pref_label_tracker = FieldTracker(fields=['pref_label'])
     
     definition  = models.TextField(_(u'definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
@@ -381,17 +383,10 @@ class Concept(models.Model):
                 term=self.uri[ self.uri.rindex('/')+1:]
             self.term=term
 
-        if not skip_name_lookup: #updating the pref_label
-            try:
-                lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
-                label = lookup_label.label_text
-            except Label.DoesNotExist:
-                if not self.pref_label  or self.pref_label == PLACEHOLDER :
-                    label =  PLACEHOLDER
-                else:
-                    label = self.pref_label
-            self.pref_label = label
-            #self.save(skip_name_lookup=True)
+        if not self.pref_label:
+            self.pref_label = PLACEHOLDER
+        pref_label_changed = self.pref_label_tracker.changed()         
+
         if not self.uri:
             if self.scheme.uri[:-1] in ('#','/') :
                 sep = self.scheme.uri[:-1]
@@ -401,12 +396,21 @@ class Concept(models.Model):
             self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
         #now its safe to  add new label to the concept for the prefLabel
-        if self.pref_label and not self.pref_label == PLACEHOLDER:
+        if not skip_name_lookup: #updating the pref_label
+            
             try:
                 lookup_label = self.labels.get(language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
+                if self.pref_label == PLACEHOLDER :
+                    self.pref_label = lookup_label.label_text
+                    # and save again
+                    super(Concept, self).save(*args, **kwargs)
+                elif pref_label_changed :
+                    lookup_label.label_text = self.pref_label
+                    lookup_label.save()
             except Label.DoesNotExist:
-                Label.objects.create(concept=self,language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel,label_text=self.pref_label)
-                    
+                lookup_label = self.labels.create(label_text=self.pref_label,language=DEFAULT_LANG,label_type=LABEL_TYPES.prefLabel)
+            
+            #self.save(skip_name_lookup=True)             
         
     def get_narrower_concepts(self):
         childs = []
