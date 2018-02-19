@@ -17,10 +17,10 @@ def read(fname):
 setup(
     name='django-skosxl',
     version = VERSION,
-    description='Pluggable django application for managing a SKOS-XL Thesaurus, based on a tag folksonomy',
+    description='Pluggable django application for managing a SKOS-XL Thesaurus,',
     packages=['skosxl','skosxl.utils'],
     include_package_data=True,
-    author='Dominique Guardiola',
+    author='Rob Atkinson,Dominique Guardiola',
     author_email='dguardiola@quinode.fr',
     license='BSD',
     long_description=read('README.rst'),
@@ -33,6 +33,7 @@ setup(
                         'django-admin-tools>=0.4.1',
                         'django-extended-choices',
                         'django-model-utils,
+                        'django-rdf_io,
                         ],
     dependency_links = [
         'https://github.com/flupke/django-taggit-templatetags.git#egg=taggit_templatetags',
