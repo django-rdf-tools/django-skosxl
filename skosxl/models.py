@@ -6,7 +6,7 @@
 # http://www.w3.org/2008/05/skos-xl
 # 
 # now synced with a configurable RDF mapping and export module django-rdf-io
-
+from __future__ import unicode_literals
 from django.db import models
 from django_extensions.db import fields as exfields
 from django.utils.translation import ugettext_lazy as _
@@ -21,6 +21,8 @@ from django.conf import settings
 from django.db.models.signals import post_save
 
 from django.contrib.contenttypes.models import ContentType
+
+from django.utils.encoding import python_2_unicode_compatible
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
@@ -34,17 +36,17 @@ import json
 PLACEHOLDER = '< no label >'
 
 LABEL_TYPES = Choices(
-    ('prefLabel',    0,  _(u'preferred')),
-    ('altLabel',     1, _(u'alternative')),
-    ('hiddenLabel',  2,  _(u'hidden')),
+    ('prefLabel',    0,  _('preferred')),
+    ('altLabel',     1, _('alternative')),
+    ('hiddenLabel',  2,  _('hidden')),
 )
 
 REL_TYPES = Choices(
     # ('broaderTransitive',   0,  u'Has a broader (transitive) concept'),
     # ('narrowerTransitive',  1,  u'Has a narrower (transitive) concept'),
-    ('broader',             0,  _(u'has a broader concept')),
-    ('narrower',            1,  _(u'has a narrower concept')),
-    ('related',             2,  _(u'has a related concept')),    
+    ('broader',             0,  _('has a broader concept')),
+    ('narrower',            1,  _('has a narrower concept')),
+    ('related',             2,  _('has a related concept')),    
 )
 
 reverse_map = {   
@@ -56,31 +58,31 @@ reverse_map = {
 }
 
 MATCH_TYPES = Choices(
-    ('exactMatch',   0,  _(u'matches exactly')),
-    ('closeMatch',   1,  _(u'matches closely')),
-    ('broadMatch',   2,  _(u'has a broader match')),
-    ('narrowMatch',  3,  _(u'has a narrower match')),
-    ('relatedMatch', 4,  _(u'has a related match')),    
+    ('exactMatch',   0,  _('matches exactly')),
+    ('closeMatch',   1,  _('matches closely')),
+    ('broadMatch',   2,  _('has a broader match')),
+    ('narrowMatch',  3,  _('has a narrower match')),
+    ('relatedMatch', 4,  _('has a related match')),    
 )
 
 # TODO - allow these to be defined by the environment - or extended as needed.
 LANG_LABELS = (
-    ('fr',_(u'French')),
-    ('de',_(u'German')),
-    ('en',_(u'English')),
-    ('es',_(u'Spanish')),
-    ('it',_(u'Italian')),
-    ('pt',_(u'Portuguese'))
+    ('fr',_('French')),
+    ('de',_('German')),
+    ('en',_('English')),
+    ('es',_('Spanish')),
+    ('it',_('Italian')),
+    ('pt',_('Portuguese'))
 )
 
 DEFAULT_LANG = getattr(settings, 'SKOSXL_DEFAULT_LANG', 'en')
 
 REVIEW_STATUS = Choices(
-    ('active',  0,  _(u'Active')),
-    ('draft',   1,  _(u'Draft')),
-    ('doubled', 2,  _(u'Duplicate')),
-    ('dispute', 3,  _(u'Dispute')),
-    ('todo',    4,  _(u'Not classified')),
+    ('active',  0,  _('Active')),
+    ('draft',   1,  _('Draft')),
+    ('doubled', 2,  _('Duplicate')),
+    ('dispute', 3,  _('Dispute')),
+    ('todo',    4,  _('Not classified')),
 )
 
 DEFAULT_SCHEME_SLUG = 'general'
@@ -96,24 +98,24 @@ class SchemeMeta(AttachedMetadata):
     """
     subject      = models.ForeignKey('Scheme', related_name="metaprops") 
  
-        
+@python_2_unicode_compatible        
 class Scheme(models.Model):
     objects = SchemeManager()
     skip_post_save = False
-    pref_label  = models.CharField(_(u'label'),blank=True,max_length=255)#should just be called label
+    pref_label  = models.CharField(_('label'),blank=True,max_length=255)#should just be called label
     slug        = exfields.AutoSlugField(populate_from=('pref_label'))
     # URI doesnt need to be a registered Namespace unless you want to use prefix:term expansion for it
-    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True)   
-    created     = exfields.CreationDateTimeField(_(u'created'),null=True)
-    modified    = exfields.ModificationDateTimeField(_(u'modified'),null=True)
-    definition  = models.TextField(_(u'definition'), blank=True)
-    changenote = models.TextField(_(u'change note'), blank=True)
-    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_(u'Authorised maintainers'),
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True)   
+    created     = exfields.CreationDateTimeField(_('created'),null=True)
+    modified    = exfields.ModificationDateTimeField(_('modified'),null=True)
+    definition  = models.TextField(_('definition'), blank=True)
+    changenote = models.TextField(_('change note'), blank=True)
+    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'),
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
     
     # metaprops = models.ManyToManyField(
     
-    def __unicode__(self):
+    def __str__(self):
         return self.pref_label
         
     def save(self,*args,**kwargs):
@@ -247,6 +249,7 @@ class Scheme(models.Model):
                           indent=4, separators=(',', ': '))
  
     
+    
 
         
 class ConceptRank(models.Model):
@@ -255,10 +258,10 @@ class ConceptRank(models.Model):
     The numerical ordering may be post-calculated on bulk import from broader-narrower relationships amongst ranked concepts.
     Ranking systems are Scheme specific. """
     scheme=models.ForeignKey(Scheme)
-    level= models.PositiveSmallIntegerField(blank=True, null=True, help_text=_(u'the depth this type of concept represents'))
-    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Label of concept'),max_length=255)
-    uri= models.URLField(_(u'definition reference'),blank=True,null=True,help_text=_(u'URI of definition'),max_length=255)
-    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text=u'Preferred style - either a #RGB colour or a CSS style string')
+    level= models.PositiveSmallIntegerField(blank=True, null=True, help_text=_('the depth this type of concept represents'))
+    pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Label of concept'),max_length=255)
+    uri= models.URLField(_('definition reference'),blank=True,null=True,help_text=_('URI of definition'),max_length=255)
+    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text='Preferred style - either a #RGB colour or a CSS style string')
 
     def __unicode__(self):
         return self.pref_label
@@ -315,47 +318,48 @@ class ConceptMeta(AttachedMetadata):
 class ConceptManager(models.Manager):    
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
-        
+
+@python_2_unicode_compatible        
 class Concept(models.Model):
     objects = ConceptManager()
     skip_post_save = False
     # this will be the 
-    term = models.CharField(_(u'term'),help_text=_(u'Required - must be valid SKOS term - ie. a URL-friendly QNAME - TODO include validation for this.'),blank=True,null=True,max_length=255)
+    term = models.CharField(_('term'),help_text=_('Required - must be valid SKOS term - ie. a URL-friendly QNAME - TODO include validation for this.'),blank=True,null=True,max_length=255)
     # not sure we will need this - SKOS names should enforce slug compatibility.
     slug        = exfields.AutoSlugField(populate_from=('term'))
-    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
+    pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
 
     pref_label_tracker = FieldTracker(fields=['pref_label'])
     
-    definition  = models.TextField(_(u'definition'), blank=True)
+    definition  = models.TextField(_('definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
-    scheme      = models.ForeignKey(Scheme, blank=True, null=True, help_text=_(u'Note - currently only membership of a single scheme supported'))
-    rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_(u'Rank (depth) of Concept in ranked hierarchy, if applicable'))
-    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text=u'Preferred style - either a #RGB colour or a CSS style string')
-    changenote  = models.TextField(_(u'change note'),blank=True)
-    created     = exfields.CreationDateTimeField(_(u'created'))
-    modified    = exfields.ModificationDateTimeField(_(u'modified'))
-    status      = models.PositiveSmallIntegerField( _(u'review status'),
+    scheme      = models.ForeignKey(Scheme, blank=True, null=True, help_text=_('Note - currently only membership of a single scheme supported'))
+    rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_('Rank (depth) of Concept in ranked hierarchy, if applicable'))
+    prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text='Preferred style - either a #RGB colour or a CSS style string')
+    changenote  = models.TextField(_('change note'),blank=True)
+    created     = exfields.CreationDateTimeField(_('created'))
+    modified    = exfields.ModificationDateTimeField(_('modified'))
+    status      = models.PositiveSmallIntegerField( _('review status'),
                                                     choices=REVIEW_STATUS, 
                                                     default=REVIEW_STATUS.active)
-    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
-    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True, help_text=_(u'Leave blank to inherit namespace from containing scheme'))    
-    author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=False)    
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_('django user'),editable=False)
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Leave blank to inherit namespace from containing scheme'))    
+    author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=False)    
 
  #
-    top_concept = models.BooleanField(default=False, verbose_name=_(u'is top concept'))
+    top_concept = models.BooleanField(default=False, verbose_name=_('is top concept'))
     sem_relations = models.ManyToManyField( "self",symmetrical=False,
                                             through='SemRelation',
                                             related_name='concept',
-                                            verbose_name=(_(u'Semantic relations')),
-                                            help_text=_(u'SKOS semantic relations are links between SKOS concepts, where the link is inherent in the meaning of the linked concepts.'))
+                                            verbose_name=(_('Semantic relations')),
+                                            help_text=_('SKOS semantic relations are links between SKOS concepts, where the link is inherent in the meaning of the linked concepts.'))
     # map_relations = models.OneToManyField( "self",symmetrical=False,
                                             # through='MapRelation',
                                             # verbose_name=(_(u'semantic relations'))
                                             # ,
                                             # help_text=_(u'These properties are used to state mapping (alignment) links between SKOS concepts in different concept schemes'))
                                             
-    def __unicode__(self):
+    def __str__(self):
         return "".join((self.term, " (", self.uri , ")" ))
     
     def natural_key(self):
@@ -371,7 +375,7 @@ class Concept(models.Model):
         
     def save(self,skip_name_lookup=False, *args, **kwargs):
         # import pdb; pdb.set_trace()
-        print "saving %s" % self.uri
+        print("saving %s" % self.uri)
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
         if not self.term :
@@ -392,7 +396,7 @@ class Concept(models.Model):
                 sep = self.scheme.uri[:-1]
             else:
                 sep = '/'
-            print "sep",sep,"suri",self.scheme.uri
+            print("sep",sep,"suri",self.scheme.uri)
             self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
         #now its safe to  add new label to the concept for the prefLabel
@@ -465,22 +469,22 @@ class CollectionMeta(AttachedMetadata):
              
 class Collection(models.Model):
     """ SKOS Collection """
-    pref_label = models.CharField(_(u'preferred label'),blank=True,null=True,help_text=_(u'Collections only support single label currently'),max_length=255)
-    uri         = models.CharField(blank=True,max_length=250,verbose_name=_(u'main URI'),editable=True, help_text=_(u'Collection URI'))    
-    scheme  = models.ForeignKey(Scheme, help_text=_(u'Scheme containing Collection'))
-    ordered = models.BooleanField(default=False, verbose_name=_(u'Collection is ordered'))
+    pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Collections only support single label currently'),max_length=255)
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
+    scheme  = models.ForeignKey(Scheme, help_text=_('Scheme containing Collection'))
+    ordered = models.BooleanField(default=False, verbose_name=_('Collection is ordered'))
     members = models.ManyToManyField( "self",symmetrical=False,
                                             through='CollectionMember',
-                                            verbose_name=(_(u'Members')),
-                                            help_text=_(u'Members are optional indexed references to Concepts'))
+                                            verbose_name=(_('Members')),
+                                            help_text=_('Members are optional indexed references to Concepts'))
                                             
     def __unicode__(self):
-        return "".join(filter(None,(self.pref_label, " (", self.uri , ")" )))
+        return "".join([_f for _f in (self.pref_label, " (", self.uri , ")" ) if _f])
                                             
 class Notation(models.Model):
-    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='notations')
-    code =  models.CharField(_(u'notation'),max_length=100, null=False)
-    codetype = CURIE_Field(max_length=200,verbose_name=_(u'(datatype)'),default='xsd:string')
+    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='notations')
+    code =  models.CharField(_('notation'),max_length=100, null=False)
+    codetype = CURIE_Field(max_length=200,verbose_name=_('(datatype)'),default='xsd:string')
     def __unicode__(self):
         return self.code + '^^<' + self.codetype + '>'  
     
@@ -493,8 +497,8 @@ class Notation(models.Model):
         super(Notation, self).save()
         
     class Meta: 
-        verbose_name = _(u'SKOS notation')
-        verbose_name_plural = _(u'notations')
+        verbose_name = _('SKOS notation')
+        verbose_name_plural = _('notations')
 
 
 class PrefLabelManager(models.Manager):
@@ -505,7 +509,7 @@ class AltLabelManager(models.Manager):
    def get_queryset(self):
         return super(AltLabelManager, self).get_queryset().filter(label_type=LABEL_TYPES.altLabel)
 
-        
+@python_2_unicode_compatible        
 class Label(models.Model):
     '''
     Defines a SKOS-XL Label Class, and also a Tag in django-taggit
@@ -515,17 +519,17 @@ class Label(models.Model):
     # temporary replacement while disconected from taggit..
     slug        = exfields.AutoSlugField(populate_from=('label_text'))
 
-    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_(u'main concept'),related_name='labels')
-    label_type  = models.PositiveSmallIntegerField(_(u'label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
-    label_text  = models.CharField(_(u'label text'),max_length=100, null=False)
-    language    = models.CharField(_(u'language'),max_length=10, default=DEFAULT_LANG)
+    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='labels')
+    label_type  = models.PositiveSmallIntegerField(_('label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
+    label_text  = models.CharField(_('label text'),max_length=100, null=False)
+    language    = models.CharField(_('language'),max_length=10, default=DEFAULT_LANG)
  
     #metadata
-    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_(u'django user'),editable=False)
-    uri         = models.CharField(_(u'author URI'),blank=True,max_length=250,editable=True)    
-    author_uri  = models.CharField(u'main URI',blank=True,max_length=250,editable=True)    
-    created     = exfields.CreationDateTimeField(_(u'created'))
-    modified    = exfields.ModificationDateTimeField(_(u'modified'))
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_('django user'),editable=False)
+    uri         = models.CharField(_('author URI'),blank=True,max_length=250,editable=True)    
+    author_uri  = models.CharField('main URI',blank=True,max_length=250,editable=True)    
+    created     = exfields.CreationDateTimeField(_('created'))
+    modified    = exfields.ModificationDateTimeField(_('modified'))
     objects = models.Manager()
     preflabels = PrefLabelManager()
     altlabels= AltLabelManager()
@@ -533,13 +537,13 @@ class Label(models.Model):
     def get_absolute_url(self):
         #import pdb; pdb.set_trace()
         return reverse('skosxl:tag_detail', args=[self.id])
-    def __unicode__(self):
-         return unicode(self.label_text)
+    def __str__(self):
+         return str(self.label_text)
     def create_concept_from_label(self):
         if not self.concept:
             # self.label_text = self.name
             c = Concept(pref_label=self.__unicode__(),
-                        changenote=unicode(ugettext_lazy(u'Created from tag "')+self.__unicode__()+u'"'))
+                        changenote=str(ugettext_lazy('Created from tag "')+self.__unicode__()+'"'))
             c.save(skip_name_lookup=True)# because we just set it
             self.concept = c
             self.save()
@@ -562,7 +566,7 @@ class Label(models.Model):
         # have to update concept's prefLabel to match _after_ label is save - otherwise it gets overwritten
         if self.label_type == LABEL_TYPES.prefLabel and self.language == DEFAULT_LANG:
             if self.concept.pref_label != self.label_text :
-                print self.concept.pref_label,self.label_text
+                print(self.concept.pref_label,self.label_text)
                 self.concept.pref_label = self.label_text
                 self.concept.save()
                 concept_saved = True
@@ -574,7 +578,7 @@ class Label(models.Model):
 
  
 def create_reverse_relation(concept,rel_type):
-    print 'creating inverse relation'
+    print('creating inverse relation')
     new_rel = SemRelation(  origin_concept=concept.target_concept, 
                             target_concept=concept.origin_concept,
                             rel_type=rel_type)
@@ -586,15 +590,15 @@ class SemRelation(models.Model):
     A model linking two skos:Concept
     Defines a sub-property of skos:semanticRelation property from the origin concept to the target concept
     '''
-    origin_concept = models.ForeignKey(Concept,related_name='rel_origin',verbose_name=(_(u'Origin')))
-    target_concept = models.ForeignKey(Concept,related_name='rel_target',verbose_name=(_(u'Target')))
-    rel_type = models.PositiveSmallIntegerField( _(u'Type of semantic relation'),choices=REL_TYPES, 
+    origin_concept = models.ForeignKey(Concept,related_name='rel_origin',verbose_name=(_('Origin')))
+    target_concept = models.ForeignKey(Concept,related_name='rel_target',verbose_name=(_('Target')))
+    rel_type = models.PositiveSmallIntegerField( _('Type of semantic relation'),choices=REL_TYPES, 
                                                     default=REL_TYPES.narrower)
 
     #    rel_type = models.ForeignKey(RelationType, related_name='curl', verbose_name=_(u'Type of semantic relation'))
     class Meta: 
-        verbose_name = _(u'Semantic relation')
-        verbose_name_plural = _(u'Semantic relations')
+        verbose_name = _('Semantic relation')
+        verbose_name_plural = _('Semantic relations')
 
     def save(self,skip_inf=False, *args, **kwargs):
         if not skip_inf:
@@ -619,45 +623,46 @@ class SemRelation(models.Model):
 #         
 class MapRelation(models.Model):
 
-    origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_(u'Local concept to map')))
+    origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_('Local concept to map')))
 #     target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
 #     target_label = models.CharField(_(u'Preferred label'),max_length=255)#nan nan il faut un autre concept stocké dans un scheme
-    uri = models.CharField(_(u'Target Concept URI'), max_length=250)
+    uri = models.CharField(_('Target Concept URI'), max_length=250)
 #     voc = models.ForeignKey(Vocabulary, verbose_name=(_(u'SKOS Thesaurus')))
-    match_type = models.PositiveSmallIntegerField( _(u'Type of mapping relation'),
+    match_type = models.PositiveSmallIntegerField( _('Type of mapping relation'),
                                                      choices=MATCH_TYPES, 
                                                      default=MATCH_TYPES.closeMatch)
     class Meta: 
-        verbose_name = _(u'Mapping relation')
-        verbose_name_plural = _(u'Mapping relations')
+        verbose_name = _('Mapping relation')
+        verbose_name_plural = _('Mapping relations')
 
 #     
 
 
-RDFTYPE_NODE=URIRef(u'http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
-CONCEPT_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#Concept')
-SCHEME_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#ConceptScheme')
-COLLECTION_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#Collection')
-HASTOPCONCEPT_NODE=URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept')
+RDFTYPE_NODE=URIRef('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+CONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#Concept')
+SCHEME_NODE=URIRef('http://www.w3.org/2004/02/skos/core#ConceptScheme')
+COLLECTION_NODE=URIRef('http://www.w3.org/2004/02/skos/core#Collection')
+HASTOPCONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept')
 
-
+@python_2_unicode_compatible
 class ImportedConceptScheme(ImportedResource):
-
+    
+     
     
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
         self.resource_type = ImportedResource.TYPE_RULE
         
-    target_scheme = models.URLField(blank=True, verbose_name=(_(u'target scheme - leave blank to use default defined in resource')))
-    import_all = models.BooleanField(default=True, verbose_name=(_(u'Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
-    force_bulk_only = models.BooleanField(default=False, verbose_name=(_(u'bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
-    force_refresh = models.BooleanField(default=False, verbose_name=(_(u'force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
-    rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_(u'property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
-    rankDepthProperty = RDFpath_Field(null=True, blank=True, max_length=1000,verbose_name=(_(u'property path of rank level ')), help_text='Property path, relative to Concept object, of rank depth(level), (integer starting with 0) if present')
-    rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_(u'property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
-    rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_(u'name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy. skos:topConcept will be ignored, and nodes matching this wil be set as topConcept.')
+    target_scheme = models.URLField(blank=True, verbose_name=(_('target scheme - leave blank to use default defined in resource')))
+    import_all = models.BooleanField(default=True, verbose_name=(_('Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
+    force_bulk_only = models.BooleanField(default=False, verbose_name=(_('bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
+    force_refresh = models.BooleanField(default=False, verbose_name=(_('force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
+    rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_('property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
+    rankDepthProperty = RDFpath_Field(null=True, blank=True, max_length=1000,verbose_name=(_('property path of rank level ')), help_text='Property path, relative to Concept object, of rank depth(level), (integer starting with 0) if present')
+    rankURIProperty = RDFpath_Field(null=True, blank=True,  max_length=1000,verbose_name=(_('property path of rank URI reference')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
+    rankTopName = models.CharField(null=True, blank=True,  max_length=100, verbose_name=(_('name of TopRank')), help_text='If not set, then the rank of designated topConcepts will be used to define the root of the ranking hierarchy. skos:topConcept will be ignored, and nodes matching this wil be set as topConcept.')
 
-    schemes = models.ManyToManyField(Scheme, blank=True, verbose_name=(_(u'Concept Schemes derived from this resource')))
+    schemes = models.ManyToManyField(Scheme, blank=True, verbose_name=(_('Concept Schemes derived from this resource')))
     
     importerrors = []
     
@@ -674,13 +679,13 @@ class ImportedConceptScheme(ImportedResource):
         if type(self) == ImportedConceptScheme :
             scheme_obj = self.importSchemes(self.get_graph(),self.target_scheme, self.force_refresh)
             # update any references to imported schemes
-            print self.schemes.all()
+            print(self.schemes.all())
             super(ImportedConceptScheme, self).save(*args,**kwargs)
-            print self.schemes.all()
+            print(self.schemes.all())
         
     class Meta: 
-        verbose_name = _(u'ImportedConceptScheme')
-        verbose_name_plural = _(u'ImportedConceptScheme')
+        verbose_name = _('ImportedConceptScheme')
+        verbose_name_plural = _('ImportedConceptScheme')
 
     def importSchemes(self,gr, target_scheme, force_refresh, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
         """ Import a single or set of concept schemes from a parsed RDF graph 
@@ -690,7 +695,7 @@ class ImportedConceptScheme(ImportedResource):
         Push to triple store is via the post_save triggers and RDF_IO mappings if defined.
         """
         if not gr:
-            raise Exception ( _(u'No RDF graph available for resource'))
+            raise Exception ( _('No RDF graph available for resource'))
         self.importerrors = []
         self.schemes.clear()
         if not target_scheme:
@@ -719,47 +724,47 @@ class ImportedConceptScheme(ImportedResource):
         """
         
         target_map_scheme = {
-            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
-            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
-            URIRef(u'http://purl.org/dc/elements/1.1/description'): { 'text_field': 'definition'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef('http://purl.org/dc/elements/1.1/description'): { 'text_field': 'definition'} ,
 #@prefix dcterms: <http://purl.org/dc/terms/> .
-            URIRef(u'http://www.w3.org/2004/02/skos/core#hasTopConcept'): {'ignore': True} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept'): {'ignore': True} ,
             }
         target_map_concept = {
-            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#inScheme'):  {'ignore': True} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf'): {'ignore': True} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',0),)} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#altLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',1),)} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#hiddenLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',2),)} , 
-            URIRef(u'http://www.w3.org/2004/02/skos/core#notation'): {'related_object':'Notation', 'related_field': 'concept', 'text_field': 'code', 'datatype_field':'codetype'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#broader'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.broader),)} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#narrower'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.narrower),)} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#related'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.related),)} ,
-            URIRef(u'http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
-            URIRef(u'http://www.w3.org/2004/02/skos#exactMatch'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
+            URIRef('http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#inScheme'):  {'ignore': True} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#topConceptOf'): {'ignore': True} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#prefLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',0),)} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#altLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',1),)} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#hiddenLabel'): {'related_object':'Label', 'related_field': 'concept', 'text_field': 'label_text', 'lang_field':'language', 'set_fields': (('label_type',2),)} , 
+            URIRef('http://www.w3.org/2004/02/skos/core#notation'): {'related_object':'Notation', 'related_field': 'concept', 'text_field': 'code', 'datatype_field':'codetype'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#broader'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.broader),)} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#narrower'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.narrower),)} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#related'): {'related_object':'SemRelation', 'related_field': 'origin_concept', 'object_field': 'target_concept', 'set_fields': (('rel_type',REL_TYPES.related),)} ,
+            URIRef('http://www.w3.org/2002/07/owl#sameAs'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,
+            URIRef('http://www.w3.org/2004/02/skos#exactMatch'): {'related_object':'MapRelation', 'related_field': 'origin_concept', 'text_field': 'uri', 'set_fields': (('match_type',0),)} ,              }
  
         target_map_collection = {
-            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
             # URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'concept'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'concept'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'concept'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'concept'} ,
         }
         target_map_subcollections = {
-            URIRef(u'http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
             # URIRef(u'http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'subcollection'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
-            URIRef(u'http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'subcollection'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#member'): {'related_object':'CollectionMember', 'related_field': 'collection', 'object_field': 'subcollection'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#memberList'): { 'related_object':'CollectionMember', 'index_field':'index', 'related_field': 'collection', 'object_field': 'subcollection'} ,
         }
         if not self.rankTopName :
-                target_map_concept[URIRef(u'http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
+                target_map_concept[URIRef('http://www.w3.org/2004/02/skos/core#topConceptOf')] =  { 'bool_field': 'top_concept'} 
         
         
         if not gr:
-            raise Exception ( _(u'No RDF graph available for resource'))
+            raise Exception ( _('No RDF graph available for resource'))
              
         if force_refresh :
             Scheme.objects.filter(uri=target_scheme).delete()
@@ -816,7 +821,7 @@ class ImportedConceptScheme(ImportedResource):
             try:
                 _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
             except Exception as e:
-                print "Error in concept building: %s" % str(e)
+                print("Error in concept building: %s" % str(e))
                 self.importerrors.append(e)
         
         ConceptRank.calcLevels(scheme=scheme_obj, topRank = self.rankTopName)
@@ -841,24 +846,24 @@ class ImportedConceptScheme(ImportedResource):
                 members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Collection }" % col )
                 related_objects = ()
                 for m in members:
-                    related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+                    related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
                 if related_objects:
                     _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
                 members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Concept }" % col )
                 related_objects = ()
                 for m in members:
-                    related_objects += ((URIRef(u'http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+                    related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
                 if related_objects: 
                  _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,related_objects=related_objects, conceptClass=Concept, classDefaults=classDefaults)
             except Exception as e:
-                print "Error in collection building: %s" % str(e)
+                print("Error in collection building: %s" % str(e))
                 self.importerrors.append(e)
      
         scheme_obj.bulk_save()
         return scheme_obj
     
     def getConcepts(self,s,gr):
-        found,conceptList = _has_items(gr.subjects(predicate=URIRef(u'http://www.w3.org/2004/02/skos/core#inScheme'), object=s))
+        found,conceptList = _has_items(gr.subjects(predicate=URIRef('http://www.w3.org/2004/02/skos/core#inScheme'), object=s))
         if not found:
             conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
         return conceptList
@@ -888,7 +893,7 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                 elif prop.get('bool_field'):
                     setattr(obj,prop['bool_field'],True)
                 else:
-                    setattr(obj,prop['text_field'],unicode(o))
+                    setattr(obj,prop['text_field'],str(o))
                     #print "setting ",prop['text_field'],unicode(o)
             elif metapropClass and not (p == RDFTYPE_NODE and o in (CONCEPT_NODE, SCHEME_NODE, COLLECTION_NODE )):
                 #import pdb; pdb.set_trace()
@@ -911,7 +916,7 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
             # if related_field 
             values = { prop.get('related_field') : obj }
             if prop.get('text_field') : 
-                values[prop['text_field']] = unicode(o) 
+                values[prop['text_field']] = str(o) 
             if prop.get('lang_field') :
                 values[prop.get('lang_field') ] = o.language or DEFAULT_LANG
             if prop.get('datatype_field') :
@@ -920,7 +925,7 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
                 # find a matching object 
                 object_prop = prop['object_field']
                 # find a way to pass in an override for this sort of specific thing if we generalised this
-                (linked_object,new) = conceptClass.objects.get_or_create(uri=unicode(o), scheme=obj.scheme, defaults=classDefaults)
+                (linked_object,new) = conceptClass.objects.get_or_create(uri=str(o), scheme=obj.scheme, defaults=classDefaults)
                 values[object_prop] = linked_object
             if prop.get('set_fields') :
                 for (fname,val) in prop.get('set_fields') :
