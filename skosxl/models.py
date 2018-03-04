@@ -647,7 +647,8 @@ HASTOPCONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept')
 @python_2_unicode_compatible
 class ImportedConceptScheme(ImportedResource):
     
-     
+    def __str__(self):
+        return ( ' '.join( filter(None,(self.resource_type,':', self.file.__unicode__(), self.remote )))) 
     
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
