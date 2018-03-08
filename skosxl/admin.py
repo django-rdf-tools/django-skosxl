@@ -213,11 +213,19 @@ def publish_rdf(modeladmin, request, queryset):
         
 publish_rdf.short_description = "Publish selected Schemes using configured service bindings"       
 
+def fill_defaultlabel(modeladmin, request, queryset):
+    #import pdb; pdb.set_trace()
+    for scheme in queryset:
+        Concept.propagate_term2label(scheme=scheme)
+        Collection.propagate_term2label(scheme=scheme)
+        
+fill_defaultlabel.short_description = "Propagate base terms to default label where not set."       
+
 
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
-    actions= [publish_rdf,]
+    actions= [publish_rdf,fill_defaultlabel]
     class Meta:
         proxy = True
 
@@ -227,7 +235,7 @@ class SchemeAdmin(FkAutocompleteAdmin):
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
     search_fields = ['pref_label','uri',]
-    actions= [publish_rdf,]
+    actions= [publish_rdf,fill_defaultlabel]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     list_filter=('importedconceptscheme__description',)
     def get_queryset(self, request):

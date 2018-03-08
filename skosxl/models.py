@@ -8,6 +8,7 @@
 # now synced with a configurable RDF mapping and export module django-rdf-io
 from __future__ import unicode_literals
 from django.db import models
+from django.db.models import F
 from django_extensions.db import fields as exfields
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ugettext_lazy
@@ -431,9 +432,14 @@ class Concept(models.Model):
         """
         mr = MapRelation.objects.filter(origin_concept = self, uri__startswith = ns )
         if mr :
-            return(mr[0].uri[mr[0].uri.rfind('/')+1:])
+            return(mr[0].uri[len(ns)+1:])
         return None
-    
+        
+    @staticmethod
+    def propagate_term2label(scheme):
+        """ propagate term from last part of URI to preferred label if missing """
+        nonames = Concept.objects.filter(scheme=scheme,pref_label=PLACEHOLDER).update(pref_label=F('term'))
+        
     class Meta :
         # unique_together = (('scheme', 'term'),)
         pass
@@ -480,7 +486,18 @@ class Collection(models.Model):
                                             
     def __unicode__(self):
         return "".join([_f for _f in (self.pref_label, " (", self.uri , ")" ) if _f])
-                                            
+    
+    @staticmethod
+    def propagate_term2label(scheme):
+        """ propagate term from last part of URI to preferred label if missing """
+        nonames = Collection.objects.filter(scheme=scheme,pref_label__isnull=True)
+        for col in nonames:
+            rindex =  col.uri.rfind('#')
+            rindex = rindex if rindex >0 else col.uri.rfind('/')
+            col.pref_label=col.uri[ rindex+1:]
+            col.save()
+  
+  
 class Notation(models.Model):
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='notations')
     code =  models.CharField(_('notation'),max_length=100, null=False)
@@ -656,6 +673,7 @@ class ImportedConceptScheme(ImportedResource):
         
     target_scheme = models.URLField(blank=True, verbose_name=(_('target scheme - leave blank to use default defined in resource')))
     import_all = models.BooleanField(default=True, verbose_name=(_('Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
+    use_termlabel = models.BooleanField(default=True, verbose_name=(_('Use term as label if label absent')), help_text='Uses term as label if label absent')
     force_bulk_only = models.BooleanField(default=False, verbose_name=(_('bulk-load target repo from source file only')), help_text='Allows for bulk load of original source file, instead of publishing just the subset loaded into SKOSXL model.')
     force_refresh = models.BooleanField(default=False, verbose_name=(_('force purge of target concept scheme')), help_text='Allows for incremental load of a single concept scheme from multiple files - e.g. collections')
     rankNameProperty = RDFpath_Field(null=True, blank=True, max_length=1000, verbose_name=(_('property path of rank name')), help_text='Property path, relative to Concept object, of label for rank descriptor, if present')
@@ -836,7 +854,7 @@ class ImportedConceptScheme(ImportedResource):
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace()               
         # now process collections
-        for row in gr.query("SELECT DISTINCT ?collection WHERE {   ?collection a skos:Collection . {?collection skos:member ?member } UNION {?collection skos:memberList ?member } }" ):
+        for row in gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member skos:inScheme <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member skos:inScheme <%s>  } }" % (scheme_obj.uri,scheme_obj.uri )):
             col = row[0]
             try:
                 (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
@@ -844,13 +862,13 @@ class ImportedConceptScheme(ImportedResource):
                 collection_obj.save()
                 # two passes - for related concepts and related collections
 
-                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Collection }" % col )
+                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> <http://www.w3.org/2004/02/skos/core#member> ?member .  ?member a <http://www.w3.org/2004/02/skos/core#Collection> }" % col )
                 related_objects = ()
                 for m in members:
                     related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
                 if related_objects:
                     _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
-                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> skos:member ?member .  ?member a skos:Concept }" % col )
+                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> <http://www.w3.org/2004/02/skos/core#member> ?member .  ?member a <http://www.w3.org/2004/02/skos/core#Concept> }" % col )
                 related_objects = ()
                 for m in members:
                     related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
@@ -859,7 +877,11 @@ class ImportedConceptScheme(ImportedResource):
             except Exception as e:
                 print("Error in collection building: %s" % str(e))
                 self.importerrors.append(e)
-     
+        
+        if self.use_termlabel :
+            Concept.propagate_term2label(scheme=scheme_obj)
+            Collection.propagate_term2label(scheme=scheme_obj)
+        
         scheme_obj.bulk_save()
         return scheme_obj
     
