@@ -732,7 +732,8 @@ class ImportedConceptScheme(ImportedResource):
             s = URIRef(target_scheme)
             scheme = self.importScheme(gr, target_scheme, force_refresh ,s ,schemeClass, conceptClass,schemeDefaults, classDefaults )
             self.schemes.add(scheme)
-        
+        #import pdb; pdb.set_trace()
+        return self.schemes.all()
 
     def importScheme(self,gr, target_scheme,  force_refresh, schemegraph, schemeClass=Scheme, conceptClass=Concept,schemeDefaults={}, classDefaults={} ):
         """ Import a single or set of concept schemes from a parsed RDF graph 
@@ -916,7 +917,10 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                 elif prop.get('bool_field'):
                     setattr(obj,prop['bool_field'],True)
                 else:
-                    setattr(obj,prop['text_field'],str(o))
+                    try:
+                        setattr(obj,prop['text_field'],str(o))
+                    except:
+                        import pdb; pdb.set_trace
                     #print "setting ",prop['text_field'],unicode(o)
             elif metapropClass and not (p == RDFTYPE_NODE and o in (CONCEPT_NODE, SCHEME_NODE, COLLECTION_NODE )):
                 #import pdb; pdb.set_trace()
