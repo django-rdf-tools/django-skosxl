@@ -687,7 +687,7 @@ class ImportedConceptScheme(ImportedResource):
     
     def save(self,*args,**kwargs):  
         # save first - to make file available
-        # import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         if not self.force_bulk_only :
             target_repo = self.target_repo
             self.target_repo = None
@@ -795,13 +795,17 @@ class ImportedConceptScheme(ImportedResource):
         related_objects = _set_object_properties(gr=gr,uri=schemegraph,obj=scheme_obj,target_map=target_map_scheme, metapropClass=SchemeMeta)
         scheme_obj.save()
         # now process any related objects - concepts first then any collections
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         for c in self.getConcepts(schemegraph,gr):
             url = str(c)
             try: 
                 term=url[ url.rindex('#')+1:]
             except :
-                term=url[ url.rindex('/')+1:]
+                try:
+                    term=url[ url.rindex('/')+1:]
+                except:
+                    print "Non URL format - e.g. blank node found - ignoring"  
+                    continue
 
             (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term, defaults=classDefaults)
             concept_obj.skip_post_save = True
@@ -855,7 +859,7 @@ class ImportedConceptScheme(ImportedResource):
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace()               
         # now process collections
-        for row in gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member skos:inScheme <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member skos:inScheme <%s>  } }" % (scheme_obj.uri,scheme_obj.uri )):
+        for row in gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri )):
             col = row[0]
             try:
                 (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
