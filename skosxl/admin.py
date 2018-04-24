@@ -6,9 +6,12 @@ from django.db.models import Q
 from itertools import chain
 from rdf_io.views import publish_set
 
-from django.forms import ModelForm
+from django.forms import ModelForm, ModelChoiceField
 
-from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
+#import autocomplete_light.shortcuts as al
+from django.contrib.admin import widgets
+
+#from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
 
 # class LabelInline(InlineAutocompleteAdmin):
@@ -38,14 +41,14 @@ class OwnedSchemeListFilter(admin.SimpleListFilter):
             return qs
         return qs.filter(scheme__authgroup__in=request.user.groups.all()) 
     
-class LabelInline(InlineAutocompleteAdmin):
+class LabelInline(admin.TabularInline):
     model = Label
     readonly_fields = ('created',)
     fields = ('language','label_type','label_text','created')
     related_search_fields = {'label' : ('label_text',)}
     extra=1    
 
-class NotationInline(InlineAutocompleteAdmin):
+class NotationInline(admin.TabularInline):
     model = Notation
     # readonly_fields = ('slug','created')
     fields = ('code','codetype')
@@ -60,23 +63,104 @@ class SKOSMappingInline(admin.TabularInline):
 #    related_search_fields = {'target_concept' : ('labels__name','definition')}
     extra=1    
 
-class RelSelectForm(ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(RelSelectForm, self).__init__(*args, **kwargs)
+
+# class RelAutocomplete(al.AutocompleteModelBase):
+    # search_fields= ['pref_label',]
+    # model = Concept
+    
+# al.register(Concept,search_fields= ['pref_label',] ,attrs={
+        # # This will set the input placeholder attribute:
+        # 'placeholder': 'Start typing ',
+        # # This will set the yourlabs.Autocomplete.minimumCharacters
+        # # options, the naming conversion is handled by jQuery.
+        # 'data-autocomplete-minimum-characters': 1,
+    # },widget_attrs={
+        # 'data-widget-maximum-values': 4,
+        # # Enable modern-style widget !
+        # 'class': 'modern-style',
+    # },)
+    
+# class RelSelectForm(ModelForm):
+    # target_concept = ModelChoiceField(
+        # queryset=Concept.objects.all(),
+        # #widget=autocomplete.ModelSelect2(url='skosxl:concept-autocomplete')
+    # )    
+    # class Meta:
+        # model = SemRelation
+        # fields = ('__all__')
+
+        
+    #def __init__(self, *args, **kwargs):
+    #    super(RelSelectForm, self).__init__(*args, **kwargs)
+        
         # access object through self.instance...
         #import pdb; pdb.set_trace()
-        try:
-            self.fields['target_concept'].queryset = Concept.objects.filter(scheme=self.instance.origin_concept.scheme)
-        except:
-            pass
+        #try:
+        #    self.fields['target_concept'].queryset = Concept.objects.filter(scheme=self.instance.origin_concept.scheme)
+        #except Exception as e:
+        #    print e
+        #    pass
+
+class RelatedConceptRawIdWidget(widgets.ForeignKeyRawIdWidget):
+
+    url_params = []
+
+    def __init__(self, rel, admin_site, attrs=None, \
+        using=None, url_params=[]):
+        super(RelatedConceptRawIdWidget, self).__init__(
+            rel, admin_site, attrs=attrs, using=using)
+        self.url_params = url_params
+
+ 
+            
+    def url_parameters(self):
+        res = super(RelatedConceptRawIdWidget, self).url_parameters()
+        # DO YOUR CUSTOM FILTERING HERE!
+
+        res.update(**self.url_params)
+        return res
+ 
         
-class RelInline(InlineAutocompleteAdmin):
+class RelInline(admin.TabularInline):
     model = SemRelation
-    form = RelSelectForm
+    # form = RelSelectForm
+    #form = al.modelform_factory(SemRelation, fields='__all__')
     fk_name = 'origin_concept'
+
     fields = ('rel_type', 'target_concept')
-    related_search_fields = {'target_concept' : ('labels__name','definition')}
+    raw_id_fields = ( 'target_concept', )
+    related_search_fields = {'target_concept' : ('pref_label','labels__name','definition')}
     extra = 1
+    
+    parent = None 
+    
+    def get_parent_object_from_request(self, request):
+        """
+        Returns the parent object from the request or None.
+
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+        from django.core.urlresolvers import resolve
+        resolved = resolve(request.path_info)
+        if resolved.args:
+            return self.parent_model.objects.get(pk=resolved.args[0])
+        return None
+    
+    def has_add_permission(self, request):
+        self.parent = self.get_parent_object_from_request(request)
+
+        # No parent - return original has_add_permission() check
+        return super(RelInline, self).has_add_permission(request)
+    
+    
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        
+        field = super(RelInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == 'target_concept':
+            field.widget = RelatedConceptRawIdWidget(SemRelation._meta.get_field('target_concept').rel, admin.site,url_params={'scheme_id': self.parent.scheme.id})
+            #import pdb; pdb.set_trace()
+        return field
 
 def create_action(scheme):
     fun = lambda modeladmin, request, queryset: queryset.update(scheme=scheme)
@@ -84,7 +168,7 @@ def create_action(scheme):
     return (name, (fun, name, _(u'Make selected concept part of the "%s" scheme') % (scheme,)))
 
 
-class ConceptMetaInline(InlineAutocompleteAdmin):
+class ConceptMetaInline(admin.TabularInline):
     model = ConceptMeta
     verbose_name = 'Additional property'
     verbose_name_plural = 'Additional properties'
@@ -95,7 +179,7 @@ class ConceptMetaInline(InlineAutocompleteAdmin):
  #   list_display = ('pref_label',)
     extra = 1
     
-class ConceptAdmin(FkAutocompleteAdmin):
+class ConceptAdmin(admin.ModelAdmin):
     readonly_fields = ('created','modified')
     search_fields = ['term','uri','pref_label','slug','definition', 'rank__pref_label']
     list_display = ('term','pref_label','uri','scheme','top_concept','rank')
@@ -103,42 +187,21 @@ class ConceptAdmin(FkAutocompleteAdmin):
     list_filter=(OwnedSchemeListFilter,'status')
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
-    # def change_view(self, request, object_id, extra_context=None):
-    #     from SPARQLWrapper import SPARQLWrapper,JSON, XML
-    #     #import pdb; pdb.set_trace()
-    #     obj = Concept.objects.get(id=object_id)
-    #     my_context = {'lists' : []}
-    #     endpoints = (   
-    #                     #('AGROVOC','http://202.73.13.50:55824/catalogs/performance/repositories/agrovoc'),
-    #                     #('ISIDORE','http://www.rechercheisidore.fr/sparql?format=application/sparql-results+json'),
-    #                     ('GEMET','http://cr.eionet.europa.eu/sparql'),
-    #                 )
-    #     for endpoint in endpoints :
-    #         try:
-    #             sparql = SPARQLWrapper(endpoint[1])
-    #             sparql.setQuery(u"""
-    #                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    #                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    #                 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    #                 SELECT ?label ?uri WHERE {
-    #                   ?uri a skos:Concept .
-    #                   ?uri skos:prefLabel ?label .
-    #                   FILTER(regex(str(?label),""" + u'"'+obj.pref_label+u'"' + u""","i"))
-    #                   FILTER( lang(?label) = "fr" )
-    #                 }
-    #             """)
-    #             sparql.setReturnFormat(JSON)
-    #             results = sparql.query().convert()
-    #             # for result in results["results"]["bindings"]:            
-    #             #     print result["label"]["value"]
-    #     
-    #             my_context['lists'].append({'name': endpoint[0],'items':results["results"]["bindings"]})
-    #         except Exception,e :
-    #             print "Caught:", e            
-    #         
-    #     return super(ConceptAdmin, self).change_view(request, object_id, extra_context=my_context)
-        
+    
+
     def changelist_view(self, request, extra_context=None):
+        request.GET._mutable=True
+        try:
+            self.origin_id = request.GET.pop('origin_id')[0]
+        except KeyError:
+            self.origin_id = None
+        try:
+            self.scheme_id = request.GET.pop('scheme_id')[0]
+        except KeyError:
+            self.scheme_id = None
+            
+        request.GET._mutable=False
+        
         try :
             scheme_id = int(request.GET['scheme_id'])
         except KeyError :
@@ -148,7 +211,7 @@ class ConceptAdmin(FkAutocompleteAdmin):
             
     fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept','definition')}),
                     (_(u'Meta-data'),
-                    {'fields':('status','prefStyle','changenote','created','modified'),
+                    {'fields':('status','supersedes','prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
     inlines = [   ConceptMetaInline , NotationInline, LabelInline, RelInline, SKOSMappingInline]
@@ -158,7 +221,13 @@ class ConceptAdmin(FkAutocompleteAdmin):
         return actions
 
     def get_queryset(self, request):
+
         qs = super(ConceptAdmin, self).get_queryset(request)
+        try:
+            if self.scheme_id :
+                qs = qs.filter(scheme__id=self.scheme_id)
+        except:
+            pass
         if request.user.is_superuser:
             return qs
         return qs.filter(scheme__authgroup__in=request.user.groups.all())
@@ -173,7 +242,7 @@ create_concept_command.short_description = _(u"Create concept(s) from selected l
 
 
 
-class SchemeMetaInline(InlineAutocompleteAdmin):
+class SchemeMetaInline(admin.TabularInline):
     model = SchemeMeta
 #    list_fields = ('pref_label', )
     show_change_link = True
@@ -184,7 +253,7 @@ class SchemeMetaInline(InlineAutocompleteAdmin):
     verbose_name = 'Additional property'
     verbose_name_plural = 'Additional properties'
 #  
-class ConceptInline(InlineAutocompleteAdmin):
+class ConceptInline(admin.TabularInline):
     model = Concept
 #    list_fields = ('pref_label', )
     show_change_link = True
@@ -194,7 +263,7 @@ class ConceptInline(InlineAutocompleteAdmin):
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 1
 
-class LabelAdmin(FkAutocompleteAdmin):
+class LabelAdmin(admin.ModelAdmin):
     list_display = ('label_text','label_type','concept')
     fields = ('label_text','language','label_type','concept')
     related_search_fields = {'concept' : ('pref_label','definition')}
@@ -230,7 +299,7 @@ class SchemeBase(Scheme):
         proxy = True
 
        
-class SchemeAdmin(FkAutocompleteAdmin):
+class SchemeAdmin(admin.ModelAdmin):
     readonly_fields = ('created','modified')
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
@@ -255,14 +324,14 @@ class SchemeConceptAdmin(SchemeAdmin):
   
 admin.site.register(Scheme, SchemeConceptAdmin)
 
-class ConceptRankAdmin(FkAutocompleteAdmin):
+class ConceptRankAdmin(admin.ModelAdmin):
     list_display = ('pref_label','level','scheme')
     list_filter = (('scheme',admin.RelatedOnlyFieldListFilter),)
     pass
   
 admin.site.register(ConceptRank, ConceptRankAdmin)
 
-class CollectionMetaInline(InlineAutocompleteAdmin):
+class CollectionMetaInline(admin.TabularInline):
     model = CollectionMeta
 #    list_fields = ('pref_label', )
     show_change_link = True
@@ -289,7 +358,7 @@ class CollectionMemberInlineForm(ModelForm):
             pass
 
             
-class CollectionMemberInline(InlineAutocompleteAdmin):
+class CollectionMemberInline(admin.TabularInline):
     model = CollectionMember
     form = CollectionMemberInlineForm
 #    list_fields = ('pref_label', )

@@ -12,6 +12,7 @@ from django.http import HttpResponse
 import json
 
 from skosxl.models import Scheme,Concept,SemRelation
+
 from SPARQLWrapper import SPARQLWrapper,JSON, XML
 
 import pprint
@@ -35,54 +36,6 @@ def loadinit(req) :
     return HttpResponse("loaded configurations:" + str(messages))  
 
 
-def sparql_query(request):
-    pp = pprint.PrettyPrinter( indent = 4 )
-    #import pdb; pdb.set_trace()
-    term = request.GET['q']
-    concepts = []
-    endpoints = (   
-                    #('AGROVOC','http://202.73.13.50:55824/catalogs/performance/repositories/agrovoc'),
-                    #('ISIDORE','http://www.rechercheisidore.fr/sparql?format=application/sparql-results+json'),
-                    #('GEMET','http://cr.eionet.europa.eu/sparql'),
-                    #('CPV','http://localhost:8080/openrdf-workbench/repositories/cpv'),
-                    #('GEMET','http://localhost:8080/openrdf-sesame/repositories/gemet'), #openrdf
-                    #('GEMET','http://localhost:8080/parliament/sparql'), 
-                    ('GEMET','http://localhost:8080/sparql/'), #4store
-                )
-    for endpoint in endpoints :
-        try:
-            
-            sparql = SPARQLWrapper(endpoint[1])
-            query = u"""
-PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>
-PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-PREFIX skosxl:<http://www.w3.org/2008/05/skos-xl#>
-SELECT ?label ?uri WHERE {
-    {?uri skos:prefLabel ?label .}
-  UNION
-    { ?uri skosxl:prefLabel ?label .}
-  FILTER(regex(str(?label),""" + u'"'+term+u'"' + u""","i"))
-  FILTER( lang(?label) = "fr" )
-}
-            """
-            
-            print query
-            sparql.setQuery(query)          
-            sparql.setReturnFormat(JSON)
-            
-            test = sparql.query()
-            for triple in test:pp.pprint( triple )
-            
-            results = sparql.query().convert()
-            for result in results["results"]["bindings"]:
-                concepts.append({   'label':result["label"]["value"],
-                                    'uri':result["uri"]["value"],
-                                    'voc':endpoint[0]})
-        except Exception,e :
-            print "Caught:", e
-    return HttpResponse(    json.dumps(concepts), 
-                            content_type="application/json")
 
 
 def scheme_detail(request,id):
@@ -120,4 +73,4 @@ def tag_list(request):
     context = {}
     context['tags'] = Label.objects.all()
     return render_to_response('tag_list.html',context,RequestContext(request))
-    
+ 

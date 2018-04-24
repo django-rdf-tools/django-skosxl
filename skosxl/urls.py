@@ -12,8 +12,7 @@ urlpatterns = [
     url(r'^scheme/(?P<id>[\w-]+)/$', views.scheme_detail, {}, name="scheme_detail"),
     url(r'^concept/(?P<id>\d+)/$', views.concept_detail, {}, name='concept_detail'),
     url(r'^label/(?P<id>[\w-]+)/$', views.tag_detail, {} , name="tag_detail"),
-    
-    url(r'^sparql/$', views.sparql_query, name="sparql_query"),
+    #url(r'^sparql/$', views.sparql_query, name="sparql_query"),
     url(r'manage/init$', views.loadinit, name='loadinit'),
         
 ]
