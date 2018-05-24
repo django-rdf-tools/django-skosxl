@@ -158,7 +158,10 @@ class RelInline(admin.TabularInline):
         
         field = super(RelInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
         if db_field.name == 'target_concept':
-            field.widget = RelatedConceptRawIdWidget(SemRelation._meta.get_field('target_concept').rel, admin.site,url_params={'scheme_id': self.parent.scheme.id})
+            try:
+                field.widget = RelatedConceptRawIdWidget(SemRelation._meta.get_field('target_concept').rel, admin.site,url_params={'scheme_id': self.parent.scheme.id})
+            except:
+                pass
             #import pdb; pdb.set_trace()
         return field
 
@@ -178,8 +181,17 @@ class ConceptMetaInline(admin.TabularInline):
     fields = ('subject','metaprop','value')
  #   list_display = ('pref_label',)
     extra = 1
-    
+
+class ConceptAdminForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(ConceptAdminForm, self).__init__(*args, **kwargs)
+        if self.instance :
+            self.fields['supercedes'].queryset = Concept.objects.filter(scheme=self.instance.scheme)
+        else:
+            self.fields['supercedes'].queryset = Concept.objects.filter(scheme=None)
+        
 class ConceptAdmin(admin.ModelAdmin):
+    form = ConceptAdminForm
     readonly_fields = ('created','modified')
     search_fields = ['term','uri','pref_label','slug','definition', 'rank__pref_label']
     list_display = ('term','pref_label','uri','scheme','top_concept','rank')
@@ -211,7 +223,7 @@ class ConceptAdmin(admin.ModelAdmin):
             
     fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept','definition')}),
                     (_(u'Meta-data'),
-                    {'fields':('status','supersedes','prefStyle','changenote','created','modified'),
+                    {'fields':('status','supercedes','prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
     inlines = [   ConceptMetaInline , NotationInline, LabelInline, RelInline, SKOSMappingInline]
@@ -231,6 +243,8 @@ class ConceptAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         return qs.filter(scheme__authgroup__in=request.user.groups.all())
+        
+
 admin.site.register(Concept, ConceptAdmin)
 
 

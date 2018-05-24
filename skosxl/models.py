@@ -343,6 +343,7 @@ class Concept(models.Model):
     status      = models.PositiveSmallIntegerField( _('review status'),
                                                     choices=REVIEW_STATUS, 
                                                     default=REVIEW_STATUS.active)
+    supercedes = models.ForeignKey("Concept", blank=True,null=True,related_name='superceded',verbose_name=_('Supercedes concept'), help_text=_('Select a concept to invalidate and replace with this concept. If empty, save concept to identify the relevant ConceptScheme. In a future update this should be supported by a wizard that copies the details of the superceded concept and reviews changes')   )                                             
     user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_('django user'),editable=False)
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Leave blank to inherit namespace from containing scheme'))    
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=False)    
