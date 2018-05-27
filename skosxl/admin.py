@@ -186,9 +186,9 @@ class ConceptAdminForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(ConceptAdminForm, self).__init__(*args, **kwargs)
         if self.instance :
-            self.fields['supercedes'].queryset = Concept.objects.filter(scheme=self.instance.scheme)
+            self.fields['supersedes'].queryset = Concept.objects.filter(scheme=self.instance.scheme)
         else:
-            self.fields['supercedes'].queryset = Concept.objects.filter(scheme=None)
+            self.fields['supersedes'].queryset = Concept.objects.filter(scheme=None)
         
 class ConceptAdmin(admin.ModelAdmin):
     form = ConceptAdminForm
@@ -223,7 +223,7 @@ class ConceptAdmin(admin.ModelAdmin):
             
     fieldsets = (   (_(u'Scheme'), {'fields':('term','uri','scheme','pref_label','rank','top_concept','definition')}),
                     (_(u'Meta-data'),
-                    {'fields':('status','supercedes','prefStyle','changenote','created','modified'),
+                    {'fields':('status','supersedes','prefStyle','changenote','created','modified'),
                      'classes':('collapse',)}),
                      )
     inlines = [   ConceptMetaInline , NotationInline, LabelInline, RelInline, SKOSMappingInline]
