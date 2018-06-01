@@ -390,7 +390,7 @@ class Concept(models.Model):
             self.term=term
 
         if not self.pref_label:
-            self.pref_label = PLACEHOLDER
+            self.pref_label = self.term
         pref_label_changed = self.pref_label_tracker.changed()         
 
         if not self.uri:
@@ -661,6 +661,7 @@ CONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#Concept')
 SCHEME_NODE=URIRef('http://www.w3.org/2004/02/skos/core#ConceptScheme')
 COLLECTION_NODE=URIRef('http://www.w3.org/2004/02/skos/core#Collection')
 HASTOPCONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept')
+MEMBER=URIRef('http://www.w3.org/2004/02/skos/core#member')
 
 @python_2_unicode_compatible
 class ImportedConceptScheme(ImportedResource):
@@ -860,26 +861,45 @@ class ImportedConceptScheme(ImportedResource):
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace()               
         # now process collections
-        for row in gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri )):
+        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
+        if not collections :
+            collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . } }" )
+        # import pdb; pdb.set_trace()    
+        for row in collections:
             col = row[0]
             try:
                 (collection_obj,new) = Collection.objects.get_or_create(scheme=scheme_obj, uri=col, ordered=False )
-                members = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,metapropClass=CollectionMeta)
+                
+                # returns declared members - some of which may not be found in current schema and will need to be saved in additional properties of the Collection
+                declaredmembers = _set_object_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,metapropClass=CollectionMeta)
                 collection_obj.save()
                 # two passes - for related concepts and related collections
-
-                members = gr.query("SELECT DISTINCT ?member WHERE { <%s> <http://www.w3.org/2004/02/skos/core#member> ?member .  ?member a <http://www.w3.org/2004/02/skos/core#Collection> }" % col )
+                
+                localmembers = gr.query("SELECT DISTINCT ?member WHERE { <%s> <http://www.w3.org/2004/02/skos/core#member> ?member .  ?member a <http://www.w3.org/2004/02/skos/core#Collection> }" % col )
                 related_objects = ()
-                for m in members:
+                for m in localmembers:
                     related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
+                
+
+                    
                 if related_objects:
                     _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_subcollections,related_objects=related_objects, conceptClass=Collection, classDefaults=classDefaults)
+                    
+                    
                 members = gr.query("SELECT DISTINCT ?member WHERE { <%s> <http://www.w3.org/2004/02/skos/core#member> ?member .  ?member a <http://www.w3.org/2004/02/skos/core#Concept> }" % col )
                 related_objects = ()
                 for m in members:
                     related_objects += ((URIRef('http://www.w3.org/2004/02/skos/core#member'),m[0],'CollectionMember'),)
                 if related_objects: 
                  _set_relatedobject_properties(gr=gr,uri=col,obj=collection_obj,target_map=target_map_collection,related_objects=related_objects, conceptClass=Concept, classDefaults=classDefaults)
+                 
+                # process declared members, skipping if localmembers
+                for (p,m, mod)  in declaredmembers:
+                    if p != MEMBER or (m,) in localmembers or (m,) in members:
+                        continue
+                    metaprop,created = GenericMetaProp.objects.get_or_create(uri=str(p))
+                    CollectionMeta.objects.get_or_create(subject=collection_obj, metaprop=metaprop, value=m.n3() )
+                    
             except Exception as e:
                 print("Error in collection building: %s" % str(e))
                 self.importerrors.append(e)
