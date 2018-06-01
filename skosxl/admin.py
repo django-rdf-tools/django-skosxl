@@ -277,6 +277,16 @@ class ConceptInline(admin.TabularInline):
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 1
 
+class CollectionInline(admin.TabularInline):
+    model = Collection
+#    list_fields = ('pref_label', )
+    show_change_link = True
+    max_num = 20
+    fields = ('pref_label',)
+ #   list_display = ('pref_label',)
+    #related_search_fields = {'concept' : ('prefLabel','definition')}
+    extra = 1
+    
 class LabelAdmin(admin.ModelAdmin):
     list_display = ('label_text','label_type','concept')
     fields = ('label_text','language','label_type','concept')
@@ -334,7 +344,7 @@ admin.site.register(SchemeBase, SchemeAdmin)
 class SchemeConceptAdmin(SchemeAdmin):
     
     readonly_fields = ('created','modified')
-    inlines = [  SchemeMetaInline, ConceptInline, ]
+    inlines = [  SchemeMetaInline, CollectionInline, ConceptInline, ]
   
 admin.site.register(Scheme, SchemeConceptAdmin)
 
@@ -430,10 +440,21 @@ class DerivedSchemesInline(admin.TabularInline):
     def label(self,instance):
         return '<a href="../../../scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label)
     label.allow_tags = True
+
+def bulk_resave(modeladmin, request, queryset):
+    #import pdb; pdb.set_trace()
+    for obj in queryset:
+        obj.save()
+        
+bulk_resave.short_description = "Post-save process all selected resources"       
+
+
     
 class ImportedConceptSchemeAdmin(admin.ModelAdmin):
     exclude = [ 'resource_type', 'target_repo', 'schemes']
     inlines = [  DerivedSchemesInline , ]
+    actions= [bulk_resave,]
+    list_filter = ('resource_type', 'target_repo')
     pass
 
 admin.site.register(ImportedConceptScheme, ImportedConceptSchemeAdmin)
