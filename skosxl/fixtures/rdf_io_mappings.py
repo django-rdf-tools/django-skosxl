@@ -80,13 +80,14 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='4'].uri", predicate="skos:relatedMatch", is_resource=True).save()
  
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
+        am = AttributeMapping(scope=pm, attr="supersedes.uri", predicate="policy:supersedes", is_resource=True).save()
     
 #    chain concept mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
     pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
- #    chain concept mapping to ConceptScheme parent
+ #    chain topconcept mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
 
