@@ -922,7 +922,6 @@ class ImportedConceptScheme(ImportedResource):
         return conceptList
         
     def processSameAs(self,s,gr):
-        import pdb; pdb.set_trace()
         for (subject,object) in gr.subject_objects (predicate=URIRef('http://www.w3.org/2002/07/owl#sameAs') ) :
             try:
                 subc = Concept.objects.get(uri=str(subject))
