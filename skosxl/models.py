@@ -859,7 +859,11 @@ class ImportedConceptScheme(ImportedResource):
             topConcepts = gr.objects(predicate=HASTOPCONCEPT_NODE, subject=schemegraph)
             for tc in topConcepts :
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
-        # import pdb; pdb.set_trace()               
+        # import pdb; pdb.set_trace() 
+
+        # process any sameAs relations into a skos:exactMatch statement
+        self.processSameAs(scheme_obj,gr)
+        
         # now process collections
         collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
@@ -916,6 +920,22 @@ class ImportedConceptScheme(ImportedResource):
         if not found:
             conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
         return conceptList
+        
+    def processSameAs(self,s,gr):
+        import pdb; pdb.set_trace()
+        for (subject,object) in gr.subject_objects (predicate=URIRef('http://www.w3.org/2002/07/owl#sameAs') ) :
+            try:
+                subc = Concept.objects.get(uri=str(subject))
+            except:
+                subc = None
+            try:
+                objc = Concept.objects.get(uri=str(object))
+            except:
+                objc = None
+            if subc :
+                rel,created = MapRelation.objects.get_or_create(origin_concept=subc, uri=str(object), match_type=MATCH_TYPES.exactMatch )
+            if objc :
+                rel,created = MapRelation.objects.get_or_create(origin_concept=objc, uri=str(subject), match_type=MATCH_TYPES.exactMatch )               
         
 def _has_items(iterable):
     try:
