@@ -861,8 +861,7 @@ class ImportedConceptScheme(ImportedResource):
                 Concept.objects.filter(uri=str(tc)).update(top_concept=True) 
         # import pdb; pdb.set_trace() 
 
-        # process any sameAs relations into a skos:exactMatch statement
-        self.processSameAs(scheme_obj,gr)
+       
         
         # now process collections
         collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
@@ -908,10 +907,13 @@ class ImportedConceptScheme(ImportedResource):
                 print("Error in collection building: %s" % str(e))
                 self.importerrors.append(e)
         
+        
         if self.use_termlabel :
             Concept.propagate_term2label(scheme=scheme_obj)
             Collection.propagate_term2label(scheme=scheme_obj)
         
+        # process any sameAs relations into a skos:exactMatch or new collections with owl:sameAs meta link statements
+        self.processSameAs(scheme_obj,gr)
         scheme_obj.bulk_save()
         return scheme_obj
     
@@ -922,20 +924,44 @@ class ImportedConceptScheme(ImportedResource):
         return conceptList
         
     def processSameAs(self,s,gr):
+        owl,created = Namespace.objects.get_or_create(prefix="owl", uri="http://www.w3.org/2002/07/owl#")
+        owlSameAs,created = GenericMetaProp.objects.get_or_create(namespace=owl, propname="sameAs")
+        
         for (subject,object) in gr.subject_objects (predicate=URIRef('http://www.w3.org/2002/07/owl#sameAs') ) :
+            subcol = None
+            objcol = None
             try:
                 subc = Concept.objects.get(uri=str(subject))
             except:
                 subc = None
+                try:
+                    subcol = Collection.objects.get(uri=str(subject))
+                except:
+                    pass
             try:
                 objc = Concept.objects.get(uri=str(object))
             except:
                 objc = None
+                try:
+                    objcol = Collection.objects.get(uri=str(object))
+                except:
+                    pass
+                    
             if subc :
                 rel,created = MapRelation.objects.get_or_create(origin_concept=subc, uri=str(object), match_type=MATCH_TYPES.exactMatch )
             if objc :
                 rel,created = MapRelation.objects.get_or_create(origin_concept=objc, uri=str(subject), match_type=MATCH_TYPES.exactMatch )               
-        
+            if subcol:
+                # add sameAs 
+                if not objcol:
+                    objcol = Collection.objects.create(uri=str(object), scheme=s, pref_label=str(object))
+                CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  ) 
+            if objcol:
+                # add sameAs 
+                if not subcol:
+                    subcol = Collection.objects.create(uri=str(subject), scheme=s, pref_label=str(subject))
+                CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
+                
 def _has_items(iterable):
     try:
         return True, itertools.chain([next(iterable)], iterable)
