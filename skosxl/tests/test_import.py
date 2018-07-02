@@ -32,6 +32,11 @@ test:Concept_defaultlang a skos:Concept ;
 
 """
 
+CONCEPT1A = """
+ test:Concept1a owl:sameAs test:Concept ;
+    .
+"""
+
 CONCEPT_S2 = """
 test:ConceptS2_1 a skos:Concept ;
     skos:prefLabel "A concept in another scheme" ;
@@ -57,6 +62,11 @@ test:Collection1 a skos:Collection ;
     .
 """
 
+COLLECTION1A = """
+test:Collection1A owl:sameAs test:Collection1 ;
+    .
+"""
+
 COLLECTION2 = """
 test:Collection2 a skos:Collection ;
     skos:prefLabel "Collection with Collection member" ;
@@ -66,6 +76,9 @@ test:Collection2 a skos:Collection ;
 
 
 SUITE_TEST = "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT2, COLLECTION1))
+
+
+
 
 class SchemeImportTestCase(TestCase):
     """ Test case for importing a concept scheme """
@@ -108,6 +121,8 @@ class SchemeImportTestCase(TestCase):
         self.assertEqual(len(concepts), 1)
         self.assertEqual(concepts[0].pref_label, u'A label in default language')
         
+        
+        
 class ConceptDetailsTestCase(TestCase):
     """ Loads a complete set of features, then tests each individual one """
     def setUp(self):
@@ -136,4 +151,30 @@ class ConceptDetailsTestCase(TestCase):
         
         self.assertEqual ( len(metaprops.filter(metaprop__uri='http://example.org/meta1')), 8 )
         self.assertEqual ( len(metaprops.filter(metaprop__uri='http://example.org/meta2')), 2 )
+       
+class SameAsTestCase(TestCase):
+    """ Ltests a sameAs generates an extra object of the right type if nothing else declared  """
+    def setUp(self):
+        loadtest = ImportedConceptScheme(id=1, resource_type=ImportedConceptScheme.TYPE_INSTANCE, force_bulk_only=False, force_refresh=True)
+        loadtest.file = SimpleUploadedFile('test.ttl', "".join(( PREFIX, SCHEME1, CONCEPT1, CONCEPT1A, COLLECTION1,  COLLECTION1A )))
+        import pdb; pdb.set_trace()
+        loadtest.save() 
+
+    def test_collectionSameAs(self):
+        """ sameAs for a Collection """  
+        owl,created = Namespace.objects.get_or_create(prefix="owl", uri="http://www.w3.org/2002/07/owl#")
+        owlSameAs,created = GenericMetaProp.objects.get_or_create(namespace=owl, propname="sameAs")        
+        c1 = Collection.objects.get(uri="http://example.org/Collection1")
+        try:
+            cm1 = CollectionMeta.objects.get(subject=c1, metaprop=owlSameAs ) 
+            self.assertEqual(cm1.value, "<http://example.org/Collection1A>")
+        except:
+            self.assertFalse(True, msg="sameAs not registered as a metadata property of Collection1")
         
+        try:
+            c1a = Collection.objects.get(uri="http://example.org/Collection1A")
+            cm1a = CollectionMeta.objects.get(subject=c1a, metaprop=owlSameAs )
+            self.assertEqual(cm1a.value, "<http://example.org/Collection1>")
+        except:
+            self.assertFalse(True, msg="sameAs not registered as a metadata property of Collection1A" if c1a else "collection1A not registered")    
+       

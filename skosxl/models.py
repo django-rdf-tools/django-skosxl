@@ -960,6 +960,7 @@ class ImportedConceptScheme(ImportedResource):
                 # add sameAs 
                 if not subcol:
                     subcol = Collection.objects.create(uri=str(subject), scheme=s, pref_label=str(subject))
+                    CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  )
                 CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
                 
 def _has_items(iterable):
