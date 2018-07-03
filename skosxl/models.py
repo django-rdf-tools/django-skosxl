@@ -477,7 +477,7 @@ class CollectionMeta(AttachedMetadata):
 class Collection(models.Model):
     """ SKOS Collection """
     pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Collections only support single label currently'),max_length=255)
-    uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
+    uri         = models.CharField(unique=True,blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
     scheme  = models.ForeignKey(Scheme, help_text=_('Scheme containing Collection'))
     ordered = models.BooleanField(default=False, verbose_name=_('Collection is ordered'))
     members = models.ManyToManyField( "self",symmetrical=False,
@@ -867,7 +867,7 @@ class ImportedConceptScheme(ImportedResource):
         collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
             collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . } }" )
-        # import pdb; pdb.set_trace()    
+        #import pdb; pdb.set_trace()    
         for row in collections:
             col = row[0]
             try:
@@ -905,6 +905,7 @@ class ImportedConceptScheme(ImportedResource):
                     
             except Exception as e:
                 print("Error in collection building: %s" % str(e))
+                #import pdb; pdb.set_trace()   
                 self.importerrors.append(e)
         
         
@@ -991,7 +992,8 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                     try:
                         setattr(obj,prop['text_field'],str(o))
                     except:
-                        import pdb; pdb.set_trace
+                        pass
+                        #import pdb; pdb.set_trace
                     #print "setting ",prop['text_field'],unicode(o)
             elif metapropClass and not (p == RDFTYPE_NODE and o in (CONCEPT_NODE, SCHEME_NODE, COLLECTION_NODE )):
                 #import pdb; pdb.set_trace()
