@@ -477,14 +477,15 @@ class CollectionMeta(AttachedMetadata):
 class Collection(models.Model):
     """ SKOS Collection """
     pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Collections only support single label currently'),max_length=255)
-    uri         = models.CharField(unique=True,blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
+    uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
     scheme  = models.ForeignKey(Scheme, help_text=_('Scheme containing Collection'))
     ordered = models.BooleanField(default=False, verbose_name=_('Collection is ordered'))
     members = models.ManyToManyField( "self",symmetrical=False,
                                             through='CollectionMember',
                                             verbose_name=(_('Members')),
                                             help_text=_('Members are optional indexed references to Concepts'))
-                                            
+    class Meta: 
+        unique_together = ['scheme','uri']
     def __unicode__(self):
         return "".join([_f for _f in (self.pref_label, " (", self.uri , ")" ) if _f])
     
@@ -864,10 +865,11 @@ class ImportedConceptScheme(ImportedResource):
        
         
         # now process collections
-        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
+        #import pdb; pdb.set_trace()
+        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
-            collections = gr.query("SELECT DISTINCT ?collection  WHERE {   ?collection a <http://www.w3.org/2004/02/skos/core#Collection> . {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . } }" )
-        #import pdb; pdb.set_trace()    
+            collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . } }" )
+        #    
         for row in collections:
             col = row[0]
             try:
@@ -932,19 +934,19 @@ class ImportedConceptScheme(ImportedResource):
             subcol = None
             objcol = None
             try:
-                subc = Concept.objects.get(uri=str(subject))
+                subc = Concept.objects.get(scheme=s,uri=str(subject))
             except:
                 subc = None
                 try:
-                    subcol = Collection.objects.get(uri=str(subject))
+                    subcol = Collection.objects.get(scheme=s,uri=str(subject))
                 except:
                     pass
             try:
-                objc = Concept.objects.get(uri=str(object))
+                objc = Concept.objects.get(scheme=s,uri=str(object))
             except:
                 objc = None
                 try:
-                    objcol = Collection.objects.get(uri=str(object))
+                    objcol = Collection.objects.get(scheme=s,uri=str(object))
                 except:
                     pass
                     
@@ -952,17 +954,21 @@ class ImportedConceptScheme(ImportedResource):
                 rel,created = MapRelation.objects.get_or_create(origin_concept=subc, uri=str(object), match_type=MATCH_TYPES.exactMatch )
             if objc :
                 rel,created = MapRelation.objects.get_or_create(origin_concept=objc, uri=str(subject), match_type=MATCH_TYPES.exactMatch )               
-            if subcol:
-                # add sameAs 
-                if not objcol:
-                    objcol = Collection.objects.create(uri=str(object), scheme=s, pref_label=str(object))
-                CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  ) 
-            if objcol:
-                # add sameAs 
-                if not subcol:
-                    subcol = Collection.objects.create(uri=str(subject), scheme=s, pref_label=str(subject))
-                    CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  )
-                CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
+            try:
+                if subcol:
+                    # add sameAs 
+                    if not objcol:
+                        objcol = Collection.objects.create(uri=str(object), scheme=s, pref_label=str(object))
+                    CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  ) 
+                if objcol:
+                    # add sameAs 
+                    if not subcol:
+                        subcol = Collection.objects.create(uri=str(subject), scheme=s, pref_label=str(subject))
+                        CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  )
+                    CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
+            except:
+                import pdb; pdb.set_trace()   
+                pass
                 
 def _has_items(iterable):
     try:
