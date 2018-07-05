@@ -967,7 +967,7 @@ class ImportedConceptScheme(ImportedResource):
                         CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  )
                     CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
             except:
-                import pdb; pdb.set_trace()   
+                #import pdb; pdb.set_trace()   
                 pass
                 
 def _has_items(iterable):
