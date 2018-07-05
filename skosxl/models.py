@@ -866,9 +866,9 @@ class ImportedConceptScheme(ImportedResource):
         
         # now process collections
         #import pdb; pdb.set_trace()
-        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
+        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
-            collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>* ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>* ?member . } }" )
+            collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . } }" )
         #    
         for row in collections:
             col = row[0]
@@ -906,7 +906,7 @@ class ImportedConceptScheme(ImportedResource):
                     CollectionMeta.objects.get_or_create(subject=collection_obj, metaprop=metaprop, value=m.n3() )
                     
             except Exception as e:
-                print("Error in collection building: %s" % str(e))
+                print("Error in building collection for %s : %s" % (col,str(e)))
                 #import pdb; pdb.set_trace()   
                 self.importerrors.append(e)
         
@@ -966,8 +966,9 @@ class ImportedConceptScheme(ImportedResource):
                         subcol = Collection.objects.create(uri=str(subject), scheme=s, pref_label=str(subject))
                         CollectionMeta.objects.get_or_create(subject=objcol, metaprop=owlSameAs, value="<%s>" % str(subject)  )
                     CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
-            except:
-                #import pdb; pdb.set_trace()   
+            except Exception as e :
+                #import pdb; pdb.set_trace()  
+                print("Error in processing sameAs between %s and %s (concepts %s %s) collections (%s %s)  %s : %s" % (str(subject),str(object),subc,objc,subcol,objcol,str(e)))
                 pass
                 
 def _has_items(iterable):
