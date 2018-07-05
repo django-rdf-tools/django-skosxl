@@ -968,7 +968,7 @@ class ImportedConceptScheme(ImportedResource):
                     CollectionMeta.objects.get_or_create(subject=subcol, metaprop=owlSameAs, value="<%s>" % str(object) )                 
             except Exception as e :
                 #import pdb; pdb.set_trace()  
-                print("Error in processing sameAs between %s and %s (concepts %s %s) collections (%s %s)  %s : %s" % (str(subject),str(object),subc,objc,subcol,objcol,str(e)))
+                print("Error in processing sameAs between %s and %s (concepts %s %s) collections (%s %s)  e =  %s" % (str(subject),str(object),subc,objc,subcol,objcol,str(e)))
                 pass
                 
 def _has_items(iterable):
