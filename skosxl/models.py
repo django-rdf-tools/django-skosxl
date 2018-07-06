@@ -865,6 +865,7 @@ class ImportedConceptScheme(ImportedResource):
        
         
         # now process collections
+        
         #import pdb; pdb.set_trace()
         collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
