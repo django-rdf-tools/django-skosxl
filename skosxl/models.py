@@ -143,17 +143,22 @@ class Scheme(models.Model):
         """ builds a forest (list) of trees of Collections,starting at root nodes 
         
         raises Validation Error if recursion found """ 
+        # import pdb; pdb.set_trace()
         collections = Collection.objects.filter(scheme=self,**filters)
         tree = {}
         for col in collections:
             tree[ col.id ] = [col,[], True ]
             for member in CollectionMember.objects.filter(collection=col):
                 tree[col.id][1].append( member.subcollection or member.concept )
-        # now traverse and set top=False for all children nodes.
+        # now traverse and set top=False for all children nodes and all empty collections with sameAs aliases.
         for node in tree:
-            for child in tree[node][1]:
-                if type(child) == Collection:
-                    tree[child.id][2] = False
+            if tree[node][1] :
+                for child in tree[node][1]:
+                    if type(child) == Collection:
+                        tree[child.id][2] = False
+            else:
+                tree[node][2] = False
+            
         # now traverse again recursively to build each tree
         
         forest = []
@@ -210,6 +215,7 @@ class Scheme(models.Model):
         return tree 
     
     def getTopConcepts(self):
+        # import pdb ; pdb.set_trace()
         tree = []
         topConcepts = Concept.objects.filter(scheme=self,top_concept=True)
         if not topConcepts :
@@ -440,6 +446,7 @@ class Concept(models.Model):
     def propagate_term2label(scheme):
         """ propagate term from last part of URI to preferred label if missing """
         nonames = Concept.objects.filter(scheme=scheme,pref_label=PLACEHOLDER).update(pref_label=F('term'))
+        nonames = Collection.objects.filter(scheme=scheme,pref_label="").update(pref_label=F('uri'))
         
     class Meta :
         # unique_together = (('scheme', 'term'),)
