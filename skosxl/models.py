@@ -679,7 +679,7 @@ class ImportedConceptScheme(ImportedResource):
     
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
-        self.resource_type = ImportedResource.TYPE_RULE
+        self.resource_type = ImportedResource.TYPE_INSTANCE
         
     target_scheme = models.URLField(blank=True, verbose_name=(_('target scheme - leave blank to use default defined in resource')))
     import_all = models.BooleanField(default=True, verbose_name=(_('Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
