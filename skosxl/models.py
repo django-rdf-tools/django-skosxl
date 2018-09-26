@@ -756,6 +756,7 @@ class ImportedConceptScheme(ImportedResource):
         target_map_scheme = {
             URIRef('http://www.w3.org/2004/02/skos/core#prefLabel'): { 'text_field': 'pref_label'} ,
             URIRef('http://www.w3.org/2000/01/rdf-schema#label'): { 'text_field': 'pref_label'} ,
+            URIRef('http://www.w3.org/2004/02/skos/core#definition'): { 'text_field': 'definition'} ,
             URIRef('http://purl.org/dc/elements/1.1/description'): { 'text_field': 'definition'} ,
 #@prefix dcterms: <http://purl.org/dc/terms/> .
             URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept'): {'ignore': True} ,

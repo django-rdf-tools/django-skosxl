@@ -438,7 +438,7 @@ class DerivedSchemesInline(admin.TabularInline):
     extra = 0
     can_delete = False
     def label(self,instance):
-        return '<a href="../../../scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label)
+        return '<a href="/admin/skosxl/scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label)
     label.allow_tags = True
 
 def bulk_resave(modeladmin, request, queryset):
