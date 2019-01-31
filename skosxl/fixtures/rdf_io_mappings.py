@@ -41,6 +41,7 @@ def load_rdf_mappings(url_base):
     """
         load RDF mappings for SKOS XL Objects
     """
+    
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:ConceptScheme", defaults = { "label" : "SKOS ConceptScheme" })
 
     sm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
@@ -78,9 +79,8 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='2'].uri", predicate="skos:broadMatch", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='3'].uri", predicate="skos:narrowMatch", is_resource=True).save()
     am = AttributeMapping(scope=pm, attr="maprelation(origin_concept)[match_type='4'].uri", predicate="skos:relatedMatch", is_resource=True).save()
- 
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
-        am = AttributeMapping(scope=pm, attr="supersedes.uri", predicate="policy:supersedes", is_resource=True).save()
+    am = AttributeMapping(scope=pm, attr="supersedes.uri", predicate="policy:supersedes", is_resource=True).save()
     
 #    chain concept mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
