@@ -7,6 +7,7 @@
 <div id="title" class="grid_12 grid">
 {% block title %}<h3>SKOS Scheme : {{object}}</h3>{% endblock %}
     <p><a href="{{ object.uri }}">{{ object.uri }}</a></p>
+	<p><a href="/rdf_io/to_rdf/scheme/id/{{ object.id }}">Local TTL mapping</a></p>
 
     <br/>
 </div>
