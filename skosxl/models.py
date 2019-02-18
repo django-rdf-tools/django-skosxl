@@ -133,7 +133,7 @@ class Scheme(models.Model):
             c.save()
        
     def natural_key(self):
-        return( self.uri )
+        return( self.uri, )
         
     def get_absolute_url(self):
         #import pdb; pdb.set_trace()
@@ -371,7 +371,7 @@ class Concept(models.Model):
         return "".join((self.term, " (", self.uri , ")" ))
     
     def natural_key(self):
-        return ( self.uri )
+        return ( self.uri , )
 #    natural_key.dependencies = ['scheme']
     
 
