@@ -11,7 +11,7 @@ def loaddata(url_base):
     """
     load_base_namespaces(url_base)
     load_rdf_mappings(url_base)
-    return ( {'stuff': 'yep'} )
+    return ( {'skosxl': 'loaded standard namespaces and SKOSXL object mappings'} )
     
 def load_base_namespaces(url_base):
     """
@@ -28,8 +28,7 @@ def load_base_namespaces(url_base):
     Namespace.objects.get_or_create( uri='http://www.w3.org/2001/XMLSchema#', defaults = { 'prefix' : 'xsd' , 'notes': 'XSD' } )
     Namespace.objects.get_or_create( uri='http://www.w3.org/2002/07/owl#', defaults = { 'prefix' : 'owl' , 'notes': 'OWL' } )
 
-    Namespace.objects.get_or_create( uri='http://id.sirf.net/def/schema/lid/', defaults = { 'prefix' : 'lid' , 'notes': 'LID - allows characterisation of resources such as VoiD:technicalFeatures against Linked Data API view names' } )
-    print "loading base namespaces"
+    print "loading base namespaces for SKOSXL"
     
 def load_urirules(url_base) :
     """
@@ -44,7 +43,7 @@ def load_rdf_mappings(url_base):
     
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:ConceptScheme", defaults = { "label" : "SKOS ConceptScheme" })
 
-    sm = new_mapping(object_type, "Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
+    sm = ObjectMapping.new_mapping(object_type, "skosxl:Scheme", "skosxl: SKOS ConceptScheme", "uri", "uri" , auto_push=True)
     # specific mapping
     am = AttributeMapping(scope=sm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=sm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
@@ -52,7 +51,7 @@ def load_rdf_mappings(url_base):
     am = AttributeMapping(scope=sm, attr="changenote", predicate="skos:changeNote", is_resource=False).save()
      
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Collection", defaults = { "label" : "SKOS Collection" })
-    pm = new_mapping(object_type, "Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
+    pm = ObjectMapping.new_mapping(object_type, "skosxl:Collection", "skosxl: SKOS Collection", "uri", "uri" , auto_push=True)
     # specific mapping
     am = AttributeMapping(scope=pm, attr="pref_label", predicate="skos:prefLabel", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="metaprops.value", predicate=":metaprops.metaprop", is_resource=False).save()
@@ -63,7 +62,7 @@ def load_rdf_mappings(url_base):
     cm = ChainedMapping(scope=sm,attr="collection",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
     (object_type,created) = ObjectType.objects.get_or_create(uri="skos:Concept", defaults = { "label" : "SKOS Concept" })
-    pm = new_mapping(object_type, "Concept", "skosxl: SKOS Concept", "uri", "uri" )
+    pm = ObjectMapping.new_mapping(object_type, "skosxl:Concept", "skosxl: SKOS Concept", "uri", "uri" )
     am = AttributeMapping(scope=pm, attr="definition", predicate="skos:definition", is_resource=False).save()
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:inScheme", is_resource=True).save()    
     #labels
@@ -85,28 +84,10 @@ def load_rdf_mappings(url_base):
 #    chain concept mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
-    pm = new_mapping(object_type, "Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
+    pm = ObjectMapping.new_mapping(object_type, "skosxl:Concept", "skosxl: skos:Concept - add topConcepts to Scheme" ,"uri", "uri" ,filter="top_concept=True")
     am = AttributeMapping(scope=pm, attr="scheme.uri", predicate="skos:topConceptOf",   is_resource=True).save()
  #    chain topconcept mapping to ConceptScheme parent
     cm = ChainedMapping(scope=sm,attr="concept",predicate="rdfs:seeAlso", chainedMapping= pm ).save()
     
 
- 
-def new_mapping(object_type,content_type_label, title, idfield, tgt,filter=None, auto_push=False):
-    content_type = ContentType.objects.get(app_label="skosxl",model=content_type_label.lower())
-    defaults =         { "auto_push" : auto_push , 
-          "id_attr" : idfield,
-          "target_uri_expr" : tgt,
-          "content_type" : content_type
-        }
-    if filter :
-        defaults['filter']=filter
-        
-    (pm,created) =   ObjectMapping.objects.get_or_create(name=title, defaults =defaults)
-    if not created :
-        AttributeMapping.objects.filter(scope=pm).delete()
-    
-    pm.obj_type.add(object_type)
-    pm.save()    
 
-    return pm   
