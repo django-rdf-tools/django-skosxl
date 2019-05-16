@@ -115,9 +115,12 @@ class Scheme(models.Model):
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
     
     # metaprops = models.ManyToManyField(
-    
-    def __str__(self):
+
+    def __unicode__(self):
         return self.pref_label
+        
+    def __str__(self):
+        return self.pref_label.encode('utf8')
         
     def save(self,*args,**kwargs):
         if not self.pref_label :
@@ -333,7 +336,7 @@ class Concept(models.Model):
     # this will be the 
     term = models.CharField(_('term'),help_text=_('Required - must be valid SKOS term - ie. a URL-friendly QNAME - TODO include validation for this.'),blank=True,null=True,max_length=255)
     # not sure we will need this - SKOS names should enforce slug compatibility.
-    slug        = exfields.AutoSlugField(populate_from=('term'))
+    slug        = exfields.AutoSlugField(populate_from=('term'), allow_duplicates=True )
     pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Will be automatically set to the preferred label in the default language - which will be automatically created using this field only if not present'),max_length=255)
 
     pref_label_tracker = FieldTracker(fields=['pref_label'])
@@ -367,8 +370,11 @@ class Concept(models.Model):
                                             # ,
                                             # help_text=_(u'These properties are used to state mapping (alignment) links between SKOS concepts in different concept schemes'))
                                             
-    def __str__(self):
+    def __unicode__(self):
         return "".join((self.term, " (", self.uri , ")" ))
+
+    def __str__(self):
+        return "".join((self.term, " (", self.uri , ")" )).encode('utf8')
     
     def natural_key(self):
         return ( self.uri , )
@@ -543,7 +549,7 @@ class Label(models.Model):
     # FIELDS name and slug are defined in TagBase  - they are forced to be unique
     # so if a concept is to be made available as a tag then it must conform to this constraint - generating a label without a Concept implies its is a tag generation - and name will be forced to be unique.
     # temporary replacement while disconected from taggit..
-    slug        = exfields.AutoSlugField(populate_from=('label_text'))
+    slug        = exfields.AutoSlugField(populate_from=('label_text'),  allow_duplicates=True)
 
     concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_('label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
@@ -563,8 +569,10 @@ class Label(models.Model):
     def get_absolute_url(self):
         #import pdb; pdb.set_trace()
         return reverse('skosxl:tag_detail', args=[self.id])
+    def __unicode__(self):
+         return self.label_text
     def __str__(self):
-         return str(self.label_text)
+        return str(self.label_text.encode('utf-8'))
     def create_concept_from_label(self):
         if not self.concept:
             # self.label_text = self.name
@@ -651,7 +659,7 @@ class MapRelation(models.Model):
 
     origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_('Local concept to map')))
 #     target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
-#     target_label = models.CharField(_(u'Preferred label'),max_length=255)#nan nan il faut un autre concept stocké dans un scheme
+#     target_label = models.CharField(_(u'Preferred label'),max_length=255)
     uri = models.CharField(_('Target Concept URI'), max_length=250)
 #     voc = models.ForeignKey(Vocabulary, verbose_name=(_(u'SKOS Thesaurus')))
     match_type = models.PositiveSmallIntegerField( _('Type of mapping relation'),
