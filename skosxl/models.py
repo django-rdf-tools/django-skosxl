@@ -883,7 +883,8 @@ class ImportedConceptScheme(ImportedResource):
         # now process collections
         
         #import pdb; pdb.set_trace()
-        collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }" % (scheme_obj.uri,scheme_obj.uri ))
+        collections = gr.query("""SELECT DISTINCT ?collection  WHERE {   {?collection a <http://www.w3.org/2004/02/skos/core#Collection> . }
+  UNION  {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member . ?member  <http://www.w3.org/2004/02/skos/core#inScheme> <%s> } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . ?member <http://www.w3.org/2004/02/skos/core#inScheme> <%s>  } }""" % (scheme_obj.uri,scheme_obj.uri ))
         if not collections :
             collections = gr.query("SELECT DISTINCT ?collection  WHERE {   {?collection <http://www.w3.org/2004/02/skos/core#member>+ ?member .  } UNION {?collection <http://www.w3.org/2004/02/skos/core#memberList>+ ?member . } }" )
         #    
@@ -938,9 +939,9 @@ class ImportedConceptScheme(ImportedResource):
         return scheme_obj
     
     def getConcepts(self,s,gr):
-        found,conceptList = _has_items(gr.subjects(predicate=URIRef('http://www.w3.org/2004/02/skos/core#inScheme'), object=s))
+        found,conceptList = _has_items(gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE))      
         if not found:
-            conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
+          conceptList = gr.query("SELECT DISTINCT ?concept  WHERE { ?concept <http://www.w3.org/2004/02/skos/core#inScheme> <%s> . MINUS { ?concept a <http://www.w3.org/2004/02/skos/core#Collection> } }" % ( s)) 
         return conceptList
         
     def processSameAs(self,s,gr):
