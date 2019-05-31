@@ -302,9 +302,15 @@ class LabelAdmin(admin.ModelAdmin):
 admin.site.register(Label, LabelAdmin)
 
 def publish_rdf(modeladmin, request, queryset):
-    publish_set(queryset,'scheme')
+    publish_set(queryset,'scheme',check=True)
         
-publish_rdf.short_description = "Publish selected Schemes using configured service bindings"       
+publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves) using configured service bindings"
+
+def publish_rdf_force(modeladmin, request, queryset):
+    publish_set(queryset,'scheme',check=False)
+        
+publish_rdf_force.short_description = "Publish (without skipping existing schemes) selected Schemes using configured service bindings"
+       
 
 def fill_defaultlabel(modeladmin, request, queryset):
     #import pdb; pdb.set_trace()
@@ -318,7 +324,7 @@ fill_defaultlabel.short_description = "Propagate base terms to default label whe
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
-    actions= [publish_rdf,fill_defaultlabel]
+    actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
     class Meta:
         proxy = True
 
@@ -328,7 +334,7 @@ class SchemeAdmin(admin.ModelAdmin):
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
     search_fields = ['pref_label','uri',]
-    actions= [publish_rdf,fill_defaultlabel]
+    actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     list_filter=('importedconceptscheme__description',)
     def get_queryset(self, request):
