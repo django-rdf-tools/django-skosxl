@@ -180,7 +180,7 @@ class ConceptMetaInline(admin.TabularInline):
     max_num = 20
     fields = ('subject','metaprop','value')
  #   list_display = ('pref_label',)
-    extra = 1
+    extra = 0
 
 class ConceptAdminForm(ModelForm):
     def __init__(self, *args, **kwargs):
@@ -263,7 +263,7 @@ class SchemeMetaInline(admin.TabularInline):
     max_num = 20
     fields = ('subject','metaprop','value')
  #   list_display = ('pref_label',)
-    extra = 1
+    extra = 0
     verbose_name = 'Additional property'
     verbose_name_plural = 'Additional properties'
 #  
@@ -275,7 +275,7 @@ class ConceptInline(admin.TabularInline):
     fields = ('term','pref_label','rank','top_concept','status')
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
-    extra = 1
+    extra = 0
 
 class CollectionInline(admin.TabularInline):
     model = Collection
@@ -285,7 +285,7 @@ class CollectionInline(admin.TabularInline):
     fields = ('pref_label',)
  #   list_display = ('pref_label',)
     #related_search_fields = {'concept' : ('prefLabel','definition')}
-    extra = 1
+    extra = 0
     
 class LabelAdmin(admin.ModelAdmin):
     list_display = ('label_text','label_type','concept')
@@ -368,7 +368,7 @@ class CollectionMetaInline(admin.TabularInline):
     max_num = 20
     fields = ('subject','metaprop','value')
  #   list_display = ('pref_label',)
-    extra = 1
+ #   extra = 1
     verbose_name = 'Additional property'
     verbose_name_plural = 'Additional properties'
     
