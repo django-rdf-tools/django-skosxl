@@ -24,7 +24,7 @@ from django.contrib.admin import widgets
 class OwnedSchemeListFilter(admin.SimpleListFilter):
     title=_('Concept Scheme')
     parameter_name = 'scheme_id'
-    
+
     def lookups(self, request, model_admin):
         if request.user.is_superuser:
             schemes = Scheme.objects.all()
@@ -33,6 +33,27 @@ class OwnedSchemeListFilter(admin.SimpleListFilter):
         return [(c.id, c.pref_label) for c in schemes]
         
     def queryset(self, request, qs):
+        try:
+            qs= qs.filter(id=request.GET['scheme_id'])
+        except:
+            pass
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(authgroup__in=request.user.groups.all()) 
+        
+class OwnedParentSchemeListFilter(admin.SimpleListFilter):
+    title=_('Concept Scheme')
+    parameter_name = 'scheme_id'
+
+    def lookups(self, request, model_admin):
+        if request.user.is_superuser:
+            schemes = Scheme.objects.all()
+        else:  
+            schemes = Scheme.objects.filter(authgroup__in=request.user.groups.all())        
+        return [(c.id, c.pref_label) for c in schemes]
+        
+    def queryset(self, request, qs):
+        import pdb; pdb.set_trace()
         try:
             qs= qs.filter(scheme__id=request.GET['scheme_id'])
         except:
@@ -196,7 +217,7 @@ class ConceptAdmin(admin.ModelAdmin):
     search_fields = ['term','uri','pref_label','slug','definition', 'rank__pref_label']
     list_display = ('term','pref_label','uri','scheme','top_concept','rank')
     #list_editable = ('status','term','scheme','top_concept')
-    list_filter=(OwnedSchemeListFilter,'status')
+    list_filter=(OwnedParentSchemeListFilter,'status')
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
     
@@ -336,7 +357,15 @@ class SchemeAdmin(admin.ModelAdmin):
     search_fields = ['pref_label','uri',]
     actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
-    list_filter=('importedconceptscheme__description',)
+    # list_filter=('importedconceptscheme__description',)
+    list_filter=(OwnedSchemeListFilter,)
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.authgroup:
+            if not request.user.is_superuser:
+             obj.authgroup = request.user.groups.first()
+        super(SchemeAdmin,self).save_model(request, obj, form, change)
+        
     def get_queryset(self, request):
         qs = super(SchemeAdmin, self).get_queryset(request)
         if request.user.is_superuser:
@@ -418,7 +447,7 @@ class CollectionMemberInline(admin.TabularInline):
         return field
     
 class CollectionAdmin(admin.ModelAdmin):
-    list_filter=(OwnedSchemeListFilter,)
+    list_filter=(OwnedParentSchemeListFilter,)
     search_fields = ['pref_label','uri']    
     
     def get_form(self, request, obj=None, **kwargs):
