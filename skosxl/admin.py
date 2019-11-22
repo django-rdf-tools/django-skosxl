@@ -7,6 +7,8 @@ from itertools import chain
 from rdf_io.views import publish_set
 
 from django.forms import ModelForm, ModelChoiceField
+from django.core.urlresolvers import resolve
+from django.http import HttpResponseRedirect 
 
 #import autocomplete_light.shortcuts as al
 from django.contrib.admin import widgets
@@ -53,7 +55,7 @@ class OwnedParentSchemeListFilter(admin.SimpleListFilter):
         return [(c.id, c.pref_label) for c in schemes]
         
     def queryset(self, request, qs):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         try:
             qs= qs.filter(scheme__id=request.GET['scheme_id'])
         except:
@@ -149,7 +151,7 @@ class RelInline(admin.TabularInline):
     fk_name = 'origin_concept'
 
     fields = ('rel_type', 'target_concept')
-    raw_id_fields = ( 'target_concept', )
+    #raw_id_fields = ( 'target_concept', )
     related_search_fields = {'target_concept' : ('pref_label','labels__name','definition')}
     extra = 1
     
@@ -179,10 +181,12 @@ class RelInline(admin.TabularInline):
         
         field = super(RelInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
         if db_field.name == 'target_concept':
-            try:
-                field.widget = RelatedConceptRawIdWidget(SemRelation._meta.get_field('target_concept').rel, admin.site,url_params={'scheme_id': self.parent.scheme.id})
-            except:
-                pass
+            field.queryset = field.queryset.filter(scheme=request._obj_.scheme).exclude(id=request._obj_.id) 
+
+#            try:
+#                field.widget = RelatedConceptRawIdWidget(SemRelation._meta.get_field('target_concept').rel, admin.site,url_params={'scheme_id': self.parent.scheme.id})
+#            except:
+#                pass
             #import pdb; pdb.set_trace()
         return field
 
@@ -221,7 +225,11 @@ class ConceptAdmin(admin.ModelAdmin):
     change_form_template = 'admin_concept_change.html'
     change_list_template = 'admin_concept_list.html'
     
-
+    def get_form(self, request, obj=None, **kwargs):
+        # just save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super(ConceptAdmin, self).get_form(request, obj, **kwargs)
+        
     def changelist_view(self, request, extra_context=None):
         request.GET._mutable=True
         try:
@@ -265,7 +273,44 @@ class ConceptAdmin(admin.ModelAdmin):
             return qs
         return qs.filter(scheme__authgroup__in=request.user.groups.all())
         
+    def save_model(self, request, obj, form, change):
+        # can we find the scheme and link it here in all cases?
+        # import pdb; pdb.set_trace()
+        super(ConceptAdmin,self).save_model(request, obj, form, change)
+        
+    def get_parent_object_from_request(self, request):
+        """
+        Returns the parent object from the request or None.
 
+        Note that this only works for Inlines, because the `parent_model`
+        is not available in the regular admin.ModelAdmin as an attribute.
+        """
+        resolved = resolve(request.path_info)
+        if resolved.args:
+            return self.parent_model.objects.get(pk=resolved.args[0])
+        return None
+        
+    def response_add(self, request, obj, post_url_continue=None):
+        #import pdb; pdb.set_trace()
+        if request.POST.has_key('_addanother'):
+            url = reverse("admin:skosxl_concept_add")
+            scheme_id = request.POST['scheme']
+            qs = '?scheme=%s' % scheme_id
+            return HttpResponseRedirect(''.join((url, qs)))
+        else:
+            return super(ConceptAdmin, self).response_add(request, obj)
+            
+    def response_change(self, request, obj, post_url_continue=None):
+        """This makes the response go to the newly created model's change page
+        without using reverse"""
+        if request.POST.has_key('_addanother'):
+            url = reverse("admin:skosxl_concept_add")
+            scheme_id = request.POST['scheme']
+            qs = '?scheme=%s' % scheme_id
+            return HttpResponseRedirect(''.join((url, qs)))
+        else:
+            return super(ConceptAdmin, self).response_change(request, obj)
+    
 admin.site.register(Concept, ConceptAdmin)
 
 
@@ -297,6 +342,7 @@ class ConceptInline(admin.TabularInline):
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
     extra = 0
+    
 
 class CollectionInline(admin.TabularInline):
     model = Collection
@@ -490,7 +536,18 @@ class ImportedConceptSchemeAdmin(admin.ModelAdmin):
     inlines = [  DerivedSchemesInline , ]
     actions= [bulk_resave,]
     list_filter = ('resource_type', 'target_repo')
-    pass
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.authgroup:
+            if not request.user.is_superuser:
+             obj.authgroup = request.user.groups.first()
+        super(ImportedConceptSchemeAdmin,self).save_model(request, obj, form, change)
+        
+    def get_queryset(self, request):
+        qs = super(ImportedConceptSchemeAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(authgroup__in=request.user.groups.all())
 
 admin.site.register(ImportedConceptScheme, ImportedConceptSchemeAdmin)
 

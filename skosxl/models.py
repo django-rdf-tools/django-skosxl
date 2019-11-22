@@ -688,7 +688,10 @@ class ImportedConceptScheme(ImportedResource):
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
         self.resource_type = ImportedResource.TYPE_INSTANCE
-        
+
+    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'),
+        help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
+   
     target_scheme = models.URLField(blank=True, verbose_name=(_('target scheme - leave blank to use default defined in resource')))
     import_all = models.BooleanField(default=True, verbose_name=(_('Import all schemes found')), help_text='Set false and specify target schem if only one of multiple Concept Schemes is required.')
     use_termlabel = models.BooleanField(default=True, verbose_name=(_('Use term as label if label absent')), help_text='Uses term as label if label absent')
@@ -935,6 +938,7 @@ class ImportedConceptScheme(ImportedResource):
         
         # process any sameAs relations into a skos:exactMatch or new collections with owl:sameAs meta link statements
         self.processSameAs(scheme_obj,gr)
+        scheme_obj.authgroup = self.authgroup
         scheme_obj.bulk_save()
         return scheme_obj
     
