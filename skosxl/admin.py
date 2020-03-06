@@ -9,7 +9,7 @@ from rdf_io.views import publish_set
 from django.forms import ModelForm, ModelChoiceField
 from django.core.urlresolvers import resolve
 from django.http import HttpResponseRedirect 
-
+from django.contrib.auth.models import Group
 #import autocomplete_light.shortcuts as al
 from django.contrib.admin import widgets
 
@@ -387,7 +387,25 @@ def fill_defaultlabel(modeladmin, request, queryset):
         
 fill_defaultlabel.short_description = "Propagate base terms to default label where not set."       
 
+class OwnedByFilter(admin.SimpleListFilter):
+    title=_('Owner')
+    parameter_name = 'authgroup_id'
 
+    def lookups(self, request, model_admin):
+        if request.user.is_superuser:
+             owners=Scheme.objects.values_list('authgroup', flat=True).distinct()
+             return  [(c, Group.objects.get(id=c).name ) for c in filter(None,owners)]
+        else:  
+             return [] 
+        
+    def queryset(self, request, qs):
+        #import pdb; pdb.set_trace()
+        try:
+            if request.user.is_superuser:
+                qs= qs.filter(authgroup__id=request.GET['authgroup_id'])
+        except:
+            pass              
+        return qs
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
@@ -404,7 +422,7 @@ class SchemeAdmin(admin.ModelAdmin):
     actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     # list_filter=('importedconceptscheme__description',)
-    list_filter=(OwnedSchemeListFilter,)
+    list_filter=(OwnedByFilter,)
     
     def save_model(self, request, obj, form, change):
         if not obj.authgroup:
