@@ -33,7 +33,7 @@ setup(
                         'django-admin-tools>=0.4.1',
                         'django-extended-choices',
                         'django-model-utils',
-                        'django-rdf_io',
+                        'django-rdf_io>=0.2',
                         ],
     dependency_links = [
         'https://github.com/flupke/django-taggit-templatetags.git#egg=taggit_templatetags',
