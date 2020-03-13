@@ -8,10 +8,11 @@ from rdf_io.views import publish_set
 
 from django.forms import ModelForm, ModelChoiceField
 from django.core.urlresolvers import resolve
-from django.http import HttpResponseRedirect 
+from django.http import HttpResponseRedirect, StreamingHttpResponse
 from django.contrib.auth.models import Group
 #import autocomplete_light.shortcuts as al
 from django.contrib.admin import widgets
+from django.contrib import messages
 
 #from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
@@ -369,13 +370,18 @@ class LabelAdmin(admin.ModelAdmin):
 admin.site.register(Label, LabelAdmin)
 
 def publish_rdf(modeladmin, request, queryset):
-    publish_set(queryset,'scheme',check=True)
+    return publish_set_action(queryset,'scheme',check=True)
         
 publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves) using configured service bindings"
 
 def publish_rdf_force(modeladmin, request, queryset):
-    publish_set(queryset,'scheme',check=False)
-        
+    return publish_set_action(queryset,'scheme',check=False)
+ 
+def publish_set_action(queryset,model,check=False):
+    response = StreamingHttpResponse(content_type="text/html")
+    response.streaming_content= publish_set(queryset,model,check)
+    return response
+    
 publish_rdf_force.short_description = "Publish (without skipping existing schemes) selected Schemes using configured service bindings"
        
 
@@ -384,7 +390,8 @@ def fill_defaultlabel(modeladmin, request, queryset):
     for scheme in queryset:
         Concept.propagate_term2label(scheme=scheme)
         Collection.propagate_term2label(scheme=scheme)
-        
+    modeladmin.message_user(request,"done this")
+    
 fill_defaultlabel.short_description = "Propagate base terms to default label where not set."       
 
 class OwnedByFilter(admin.SimpleListFilter):
