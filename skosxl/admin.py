@@ -369,21 +369,34 @@ class LabelAdmin(admin.ModelAdmin):
         return qs.filter(concept__scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Label, LabelAdmin)
 
-def publish_rdf(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=True)
+def publish_rdf_review(modeladmin, request, queryset):
+    return publish_set_action(queryset,'scheme',check=True, mode='REVIEW')
         
-publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves) using configured service bindings"
 
-def publish_rdf_force(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=False)
+def publish_rdf(modeladmin, request, queryset):
+    return publish_set_action(queryset,'scheme',check=True,mode='PUBLISH')
+        
+publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves)"
+publish_rdf_review.short_description = "Publish to review selected Schemes (skipping if URI resolves)"
+
+
+def publish_rdf_force_review(modeladmin, request, queryset):
+    return publish_set_action(queryset,'scheme',check=False,mode='REVIEW')
  
-def publish_set_action(queryset,model,check=False):
+def publish_rdf_force(modeladmin, request, queryset):
+    return publish_set_action(queryset,'scheme',check=False,mode='PUBLISH')
+    
+def publish_set_action(queryset,model,check=False,mode='PUBLISH'):
     response = StreamingHttpResponse(content_type="text/html")
-    response.streaming_content= publish_set(queryset,model,check)
+    response.streaming_content= publish_set(queryset,model,check,mode)
     return response
     
-publish_rdf_force.short_description = "Publish (without skipping existing schemes) selected Schemes using configured service bindings"
-       
+publish_rdf_force.short_description = "Publish to production (without skipping existing schemes) selected Schemes"
+publish_rdf_force_review.short_description = "Publish to REVIEW (without skipping existing schemes) selected Schemes"
+
+def explain_choices(modeladmin, request, queryset):
+    shirt_description = "Explain publishing modes"
+    modeladmin.message_user(request,"""Publishing in REVIEW or PUBLISH mode uses alternative Config Variables values if scoped to these modes. Publishing executes the configured Servicebinding chains for these objects.""")
 
 def fill_defaultlabel(modeladmin, request, queryset):
     #import pdb; pdb.set_trace()
@@ -416,7 +429,7 @@ class OwnedByFilter(admin.SimpleListFilter):
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
-    actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
+    actions= [publish_rdf_review,publish_rdf_force_review,publish_rdf,publish_rdf_force,explain_choices,fill_defaultlabel]
     class Meta:
         proxy = True
 
@@ -426,7 +439,7 @@ class SchemeAdmin(admin.ModelAdmin):
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
     search_fields = ['pref_label','uri',]
-    actions= [publish_rdf,publish_rdf_force,fill_defaultlabel]
+    actions= [publish_rdf_review,publish_rdf_force_review,publish_rdf,publish_rdf_force,explain_choices,fill_defaultlabel]
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     # list_filter=('importedconceptscheme__description',)
     list_filter=(OwnedByFilter,)
