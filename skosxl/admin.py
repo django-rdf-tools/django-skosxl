@@ -8,7 +8,7 @@ from rdf_io.views import publish_set
 
 from django.forms import ModelForm, ModelChoiceField
 from django.core.urlresolvers import resolve
-from django.http import HttpResponseRedirect, StreamingHttpResponse
+from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import Group
 #import autocomplete_light.shortcuts as al
 from django.contrib.admin import widgets
@@ -370,26 +370,50 @@ class LabelAdmin(admin.ModelAdmin):
 admin.site.register(Label, LabelAdmin)
 
 def publish_rdf_review(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=True, mode='REVIEW')
+    return publish_set_action(modeladmin,request,queryset,'scheme',check=True, mode='REVIEW')
         
 
 def publish_rdf(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=True,mode='PUBLISH')
+    return publish_set_action(modeladmin,request,queryset,'scheme',check=True,mode='PUBLISH')
         
 publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves)"
 publish_rdf_review.short_description = "Publish to review selected Schemes (skipping if URI resolves)"
 
 
 def publish_rdf_force_review(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=False,mode='REVIEW')
+    return publish_set_action(modeladmin,request,queryset,'scheme',check=False,mode='REVIEW')
  
 def publish_rdf_force(modeladmin, request, queryset):
-    return publish_set_action(queryset,'scheme',check=False,mode='PUBLISH')
+    return publish_set_action(modeladmin,request,queryset,'scheme',check=False,mode='PUBLISH')
+
+def publish_set_background(queryset,model,check,mode):
+    from django.core.files import File
+    from django.conf import settings
+    import os
+    import time
+    if settings.BATCH_RDFPUB_LOG :
+        logf = os.path.join(settings.BATCH_RDFPUB_LOG,'skos_batch_publish.html')
+    else:
+        logf = os.path.join(settings.STATIC_ROOT,'skos_batch_publish.html')
+    with open(logf,'w') as f:
+        proclog = File(f) 
+        f.write("Publishing %s schemes in mode %s at %s<BR>" % ( str(len(queryset)), mode, time.asctime()))
+        for msg in publish_set(queryset,model,check,mode):
+            f.write(msg)
+        f.write ("<BR> publish action finished at %s<BR>" % (  time.asctime(),))
     
-def publish_set_action(queryset,model,check=False,mode='PUBLISH'):
-    response = StreamingHttpResponse(content_type="text/html")
-    response.streaming_content= publish_set(queryset,model,check,mode)
-    return response
+    
+def publish_set_action(modeladmin,request,queryset,model,check=False,mode='PUBLISH'):
+    response = HttpResponse(content_type="text/html")
+    modeladmin.message_user(request,"""Publishing in background initiated.""")
+    import threading
+    t = threading.Thread(target=publish_set_background, args=(queryset,model,check,mode), kwargs={})
+    t.setDaemon(True)
+    t.start()
+
+
+
+    
     
 publish_rdf_force.short_description = "Publish to production (without skipping existing schemes) selected Schemes"
 publish_rdf_force_review.short_description = "Publish to REVIEW (without skipping existing schemes) selected Schemes"
