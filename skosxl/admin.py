@@ -400,6 +400,7 @@ def publish_set_background(queryset,model,check,mode):
         f.write("Publishing %s schemes in mode %s at %s<BR>" % ( str(len(queryset)), mode, time.asctime()))
         for msg in publish_set(queryset,model,check,mode):
             f.write(msg)
+            f.flush()
         f.write ("<BR> publish action finished at %s<BR>" % (  time.asctime(),))
     
     
