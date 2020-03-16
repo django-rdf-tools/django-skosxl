@@ -391,9 +391,9 @@ def publish_set_background(queryset,model,check,mode):
     from django.conf import settings
     import os
     import time
-    if settings.BATCH_RDFPUB_LOG :
+    try:
         logf = os.path.join(settings.BATCH_RDFPUB_LOG,'skos_batch_publish.html')
-    else:
+    except:
         logf = os.path.join(settings.STATIC_ROOT,'skos_batch_publish.html')
     with open(logf,'w') as f:
         proclog = File(f) 
