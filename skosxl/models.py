@@ -389,7 +389,7 @@ class Concept(models.Model):
         
     def save(self,skip_name_lookup=False, *args, **kwargs):
         # import pdb; pdb.set_trace()
-        print("saving %s" % self.uri)
+        # print("saving %s" % self.uri)
         if self.scheme is None:
             self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
         if not self.term :
@@ -410,7 +410,7 @@ class Concept(models.Model):
                 sep = self.scheme.uri[:-1]
             else:
                 sep = '/'
-            print("sep",sep,"suri",self.scheme.uri)
+            # print("sep",sep,"suri",self.scheme.uri)
             self.uri = sep.join((self.scheme.uri,self.term))
         super(Concept, self).save(*args, **kwargs) 
         #now its safe to  add new label to the concept for the prefLabel
@@ -600,7 +600,7 @@ class Label(models.Model):
         # have to update concept's prefLabel to match _after_ label is save - otherwise it gets overwritten
         if self.label_type == LABEL_TYPES.prefLabel and self.language == DEFAULT_LANG:
             if self.concept.pref_label != self.label_text :
-                print(self.concept.pref_label,self.label_text)
+                # print(self.concept.pref_label,self.label_text)
                 self.concept.pref_label = self.label_text
                 self.concept.save()
                 concept_saved = True
@@ -612,7 +612,7 @@ class Label(models.Model):
 
  
 def create_reverse_relation(concept,rel_type):
-    print('creating inverse relation')
+    # print('creating inverse relation')
     new_rel = SemRelation(  origin_concept=concept.target_concept, 
                             target_concept=concept.origin_concept,
                             rel_type=rel_type)
@@ -719,9 +719,9 @@ class ImportedConceptScheme(ImportedResource):
         if type(self) == ImportedConceptScheme :
             scheme_obj = self.importSchemes(self.get_graph(),self.target_scheme, self.force_refresh)
             # update any references to imported schemes
-            print(self.schemes.all())
+            # print(self.schemes.all())
             super(ImportedConceptScheme, self).save(*args,**kwargs)
-            print(self.schemes.all())
+            # print(self.schemes.all())
         
     class Meta: 
         verbose_name = _('ImportedConceptScheme')
