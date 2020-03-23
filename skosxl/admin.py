@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 from itertools import chain
 from rdf_io.views import publish_set
+from rdf_io.models import ConfigVar
 
 from django.forms import ModelForm, ModelChoiceField
 from django.core.urlresolvers import resolve
@@ -13,6 +14,7 @@ from django.contrib.auth.models import Group
 #import autocomplete_light.shortcuts as al
 from django.contrib.admin import widgets
 from django.contrib import messages
+from django.shortcuts import render
 
 #from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
@@ -369,22 +371,6 @@ class LabelAdmin(admin.ModelAdmin):
         return qs.filter(concept__scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Label, LabelAdmin)
 
-def publish_rdf_review(modeladmin, request, queryset):
-    return publish_set_action(modeladmin,request,queryset,'scheme',check=True, mode='REVIEW')
-        
-
-def publish_rdf(modeladmin, request, queryset):
-    return publish_set_action(modeladmin,request,queryset,'scheme',check=True,mode='PUBLISH')
-        
-publish_rdf.short_description = "Publish selected Schemes (skipping if URI resolves)"
-publish_rdf_review.short_description = "Publish to review selected Schemes (skipping if URI resolves)"
-
-
-def publish_rdf_force_review(modeladmin, request, queryset):
-    return publish_set_action(modeladmin,request,queryset,'scheme',check=False,mode='REVIEW')
- 
-def publish_rdf_force(modeladmin, request, queryset):
-    return publish_set_action(modeladmin,request,queryset,'scheme',check=False,mode='PUBLISH')
 
 def publish_set_background(queryset,model,check,mode):
     from django.core.files import File
@@ -404,24 +390,12 @@ def publish_set_background(queryset,model,check,mode):
         f.write ("<BR> publish action finished at %s<BR>" % (  time.asctime(),))
     
     
-def publish_set_action(modeladmin,request,queryset,model,check=False,mode='PUBLISH'):
-    response = HttpResponse(content_type="text/html")
-    modeladmin.message_user(request,"""Publishing in background initiated.""")
+def publish_set_action(queryset,model,check=False,mode='PUBLISH'):
     import threading
     t = threading.Thread(target=publish_set_background, args=(queryset,model,check,mode), kwargs={})
     t.setDaemon(True)
     t.start()
 
-
-
-    
-    
-publish_rdf_force.short_description = "Publish to production (without skipping existing schemes) selected Schemes"
-publish_rdf_force_review.short_description = "Publish to REVIEW (without skipping existing schemes) selected Schemes"
-
-def explain_choices(modeladmin, request, queryset):
-    shirt_description = "Explain publishing modes"
-    modeladmin.message_user(request,"""Publishing in REVIEW or PUBLISH mode uses alternative Config Variables values if scoped to these modes. Publishing executes the configured Servicebinding chains for these objects.""")
 
 def fill_defaultlabel(modeladmin, request, queryset):
     #import pdb; pdb.set_trace()
@@ -439,7 +413,7 @@ class OwnedByFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         if request.user.is_superuser:
              owners=Scheme.objects.values_list('authgroup', flat=True).distinct()
-             return  [(c, Group.objects.get(id=c).name ) for c in filter(None,owners)]
+             return [('None','None'),] +  [ (c, Group.objects.get(id=c).name ) for c in filter(None,owners)]
         else:  
              return [] 
         
@@ -447,14 +421,16 @@ class OwnedByFilter(admin.SimpleListFilter):
         #import pdb; pdb.set_trace()
         try:
             if request.user.is_superuser:
-                qs= qs.filter(authgroup__id=request.GET['authgroup_id'])
+                if request.GET['authgroup_id'] != "None" :
+                    qs= qs.filter(authgroup__id=request.GET['authgroup_id'])
+                else:
+                    qs= qs.filter(authgroup__isnull=True)
         except:
             pass              
         return qs
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
-    actions= [publish_rdf_review,publish_rdf_force_review,publish_rdf,publish_rdf_force,explain_choices,fill_defaultlabel]
     class Meta:
         proxy = True
 
@@ -464,11 +440,50 @@ class SchemeAdmin(admin.ModelAdmin):
     inlines = [  SchemeMetaInline, ]  
     model=SchemeBase
     search_fields = ['pref_label','uri',]
-    actions= [publish_rdf_review,publish_rdf_force_review,publish_rdf,publish_rdf_force,explain_choices,fill_defaultlabel]
+    actions= ['publish_options', 'fill_defaultlabel', 'set_batch_owner']
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     # list_filter=('importedconceptscheme__description',)
     list_filter=(OwnedByFilter,)
     
+    def set_batch_owner(self,request,queryset):
+        """batch update manager group"""
+        if 'apply' in request.POST:
+            # The user clicked submit on the intermediate form.
+            # Perform our update action:
+            if not request.POST.get('group') :
+                self.message_user(request,
+                              "Cancelled action")
+            else:               
+                queryset.update(authgroup=Group.objects.get(id=request.POST.get('group')))
+                self.message_user(request,
+                              "Updated authorised group for selected schemes")
+            return HttpResponseRedirect(request.get_full_path())
+        return render(request,
+                      'admin/admin_batch_set_owner.html',
+                      context={'schemes':queryset, 'groups':Group.objects.all()
+                        })
+    def publish_options(self,request,queryset):
+        """Batch publish with a set of mode options"""
+        if 'apply' in request.POST:
+            # The user clicked submit on the intermediate form.
+            # Perform our update action:
+            if request.POST.get('mode') == "CANCEL" :
+                self.message_user(request,
+                              "Cancelled publish action")
+            else:
+                checkuri = 'checkuri' in request.POST
+                publish_set_action(queryset,'scheme',check=checkuri,mode=request.POST.get('mode'))
+                self.message_user(request,
+                              "started publishing in {} mode for {} schemes".format(request.POST.get('mode'),queryset.count()))
+            return HttpResponseRedirect(request.get_full_path())
+        return render(request,
+                      'admin/admin_publish.html',
+                      context={'schemes':queryset, 
+                        'pubvars': ConfigVar.getvars('PUBLISH') ,
+                        'reviewvars': ConfigVar.getvars('REVIEW') ,
+                        })
+
+
     def save_model(self, request, obj, form, change):
         if not obj.authgroup:
             if not request.user.is_superuser:
