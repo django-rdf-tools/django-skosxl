@@ -4,7 +4,7 @@ from skosxl.models import *
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 from itertools import chain
-from rdf_io.views import publish_set
+from rdf_io.views import *
 from rdf_io.models import ConfigVar
 
 from django.forms import ModelForm, ModelChoiceField
@@ -15,6 +15,7 @@ from django.contrib.auth.models import Group
 from django.contrib.admin import widgets
 from django.contrib import messages
 from django.shortcuts import render
+from django.utils.safestring import mark_safe
 
 #from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
@@ -372,29 +373,40 @@ class LabelAdmin(admin.ModelAdmin):
 admin.site.register(Label, LabelAdmin)
 
 
-def publish_set_background(queryset,model,check,mode):
+def publish_set_background(queryset,model,check,mode,logf):
     from django.core.files import File
-    from django.conf import settings
-    import os
+
     import time
-    try:
-        logf = os.path.join(settings.BATCH_RDFPUB_LOG,'skos_batch_publish.html')
-    except:
-        logf = os.path.join(settings.STATIC_ROOT,'skos_batch_publish.html')
+    
     with open(logf,'w') as f:
         proclog = File(f) 
         f.write("Publishing %s schemes in mode %s at %s<BR>" % ( str(len(queryset)), mode, time.asctime()))
         for msg in publish_set(queryset,model,check,mode):
-            f.write(msg)
+            if( msg.startswith("Exception") ):
+                em = "<strong>"
+                emend = "</strong>"
+            else:
+                em = ""
+                emend = ""
+            f.write(msg.join(("<LI>",em,emend,"</LI>")))
             f.flush()
         f.write ("<BR> publish action finished at %s<BR>" % (  time.asctime(),))
     
     
 def publish_set_action(queryset,model,check=False,mode='PUBLISH'):
     import threading
-    t = threading.Thread(target=publish_set_background, args=(queryset,model,check,mode), kwargs={})
+    from django.conf import settings
+    import os
+    import time
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    try:
+        logf = os.path.join(settings.BATCH_RDFPUB_LOG,'skos_batch_publish_{}.html'.format(timestr))
+    except:
+        logf = os.path.join(settings.STATIC_ROOT,'skos_batch_publish_{}.html'.format(timestr))
+    t = threading.Thread(target=publish_set_background, args=(queryset,model,check,mode,logf), kwargs={})
     t.setDaemon(True)
     t.start()
+    return logf
 
 
 def fill_defaultlabel(modeladmin, request, queryset):
@@ -444,6 +456,7 @@ class SchemeAdmin(admin.ModelAdmin):
     verbose_name = 'Scheme with its member concepts - use Scheme bases if this may be a inconveniently large list'
     # list_filter=('importedconceptscheme__description',)
     list_filter=(OwnedByFilter,)
+    list_display = ('pref_label','authgroup')
     
     def set_batch_owner(self,request,queryset):
         """batch update manager group"""
@@ -472,9 +485,9 @@ class SchemeAdmin(admin.ModelAdmin):
                               "Cancelled publish action")
             else:
                 checkuri = 'checkuri' in request.POST
-                publish_set_action(queryset,'scheme',check=checkuri,mode=request.POST.get('mode'))
+                logfile= publish_set_action(queryset,'scheme',check=checkuri,mode=request.POST.get('mode'))
                 self.message_user(request,
-                              "started publishing in {} mode for {} schemes".format(request.POST.get('mode'),queryset.count()))
+                              mark_safe('started publishing in {} mode for {} schemes at <A HREF="{}" target="_log">{}</A>'.format(request.POST.get('mode'),queryset.count(),logfile,logfile) ) )
             return HttpResponseRedirect(request.get_full_path())
         return render(request,
                       'admin/admin_publish.html',
