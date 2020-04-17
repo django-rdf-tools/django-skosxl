@@ -27,7 +27,7 @@ from django.utils.encoding import python_2_unicode_compatible
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
-from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field, AttachedMetadata, makenode
+from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field, AttachedMetadata, TYPE_INSTANCE, makenode
 from rdflib import Graph,namespace
 from rdflib.term import URIRef, Literal
 import itertools
@@ -687,7 +687,7 @@ class ImportedConceptScheme(ImportedResource):
     
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
-        self.resource_type = ImportedResource.TYPE_INSTANCE
+        self.resource_type = TYPE_INSTANCE
 
     authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'),
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
