@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 from itertools import chain
 from rdf_io.views import *
+from rdf_io.admin import publish_set_action
 from rdf_io.models import ConfigVar
 
 from django.forms import ModelForm, ModelChoiceField
@@ -371,42 +372,6 @@ class LabelAdmin(admin.ModelAdmin):
             return qs
         return qs.filter(concept__scheme__authgroup__in=request.user.groups.all())
 admin.site.register(Label, LabelAdmin)
-
-
-def publish_set_background(queryset,model,check,mode,logf):
-    from django.core.files import File
-
-    import time
-    
-    with open(logf,'w') as f:
-        proclog = File(f) 
-        f.write("Publishing %s schemes in mode %s at %s<BR>" % ( str(len(queryset)), mode, time.asctime()))
-        for msg in publish_set(queryset,model,check,mode):
-            if( msg.startswith("Exception") ):
-                em = "<strong>"
-                emend = "</strong>"
-            else:
-                em = ""
-                emend = ""
-            f.write(msg.join(("<LI>",em,emend,"</LI>")))
-            f.flush()
-        f.write ("<BR> publish action finished at %s<BR>" % (  time.asctime(),))
-    
-    
-def publish_set_action(queryset,model,check=False,mode='PUBLISH'):
-    import threading
-    from django.conf import settings
-    import os
-    import time
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    try:
-        logf = os.path.join(settings.BATCH_RDFPUB_LOG,'skos_batch_publish_{}.html'.format(timestr))
-    except:
-        logf = os.path.join(settings.STATIC_ROOT,'skos_batch_publish_{}.html'.format(timestr))
-    t = threading.Thread(target=publish_set_background, args=(queryset,model,check,mode,logf), kwargs={})
-    t.setDaemon(True)
-    t.start()
-    return logf
 
 
 def fill_defaultlabel(modeladmin, request, queryset):
