@@ -592,6 +592,7 @@ class ImportedConceptSchemeAdmin(admin.ModelAdmin):
     inlines = [  DerivedSchemesInline , ]
     actions= [bulk_resave,]
     list_filter = ('resource_type', 'target_repo')
+    search_fields = ['description', 'remote', 'graph', 'schemes__pref_label']
     
     def save_model(self, request, obj, form, change):
         if not obj.authgroup:
