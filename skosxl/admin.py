@@ -185,7 +185,7 @@ class RelInline(admin.TabularInline):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         
         field = super(RelInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
-        if db_field.name == 'target_concept':
+        if db_field.name == 'target_concept' and request._obj_ and request._obj_.scheme and request._obj_.id :
             field.queryset = field.queryset.filter(scheme=request._obj_.scheme).exclude(id=request._obj_.id) 
 
 #            try:
@@ -593,7 +593,7 @@ class ImportedConceptSchemeAdmin(admin.ModelAdmin):
     actions= [bulk_resave,]
     list_filter = ('resource_type', 'target_repo')
     search_fields = ['description', 'remote', 'graph', 'schemes__pref_label']
-    
+    resourcetype = 'scheme'
     def save_model(self, request, obj, form, change):
         if not obj.authgroup:
             if not request.user.is_superuser:

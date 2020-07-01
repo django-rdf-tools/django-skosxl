@@ -329,6 +329,15 @@ class ConceptManager(models.Manager):
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
 
+def validate_scheme(self,scheme):
+    print ( "validating scheme" )
+    if scheme is None:
+        try:
+            scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
+        except:
+            raise ValidationError("No concept scheme specified and no default scheme available")
+
+            
 @python_2_unicode_compatible        
 class Concept(models.Model):
     objects = ConceptManager()
@@ -343,7 +352,7 @@ class Concept(models.Model):
     
     definition  = models.TextField(_('definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
-    scheme      = models.ForeignKey(Scheme, blank=True, null=True, help_text=_('Note - currently only membership of a single scheme supported'))
+    scheme      = models.ForeignKey(Scheme, blank=True, null=True, validators=[ validate_scheme] ,help_text=_('Note - currently only membership of a single scheme supported'))
     rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_('Rank (depth) of Concept in ranked hierarchy, if applicable'))
     prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text='Preferred style - either a #RGB colour or a CSS style string')
     changenote  = models.TextField(_('change note'),blank=True)
@@ -391,7 +400,10 @@ class Concept(models.Model):
         # import pdb; pdb.set_trace()
         # print("saving %s" % self.uri)
         if self.scheme is None:
-            self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
+            try:
+                self.scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
+            except:
+                raise ValidationError("No concept scheme specified and no default scheme available")
         if not self.term :
             if not self.uri:
                 raise ValidationError("Term or URI must be present")
