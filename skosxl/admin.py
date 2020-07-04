@@ -297,7 +297,7 @@ class ConceptAdmin(admin.ModelAdmin):
         
     def response_add(self, request, obj, post_url_continue=None):
         #import pdb; pdb.set_trace()
-        if request.POST.has_key('_addanother'):
+        if '_addanother' in request.POST:
             url = reverse("admin:skosxl_concept_add")
             scheme_id = request.POST['scheme']
             qs = '?scheme=%s' % scheme_id
@@ -308,7 +308,7 @@ class ConceptAdmin(admin.ModelAdmin):
     def response_change(self, request, obj, post_url_continue=None):
         """This makes the response go to the newly created model's change page
         without using reverse"""
-        if request.POST.has_key('_addanother'):
+        if '_addanother' in request.POST:
             url = reverse("admin:skosxl_concept_add")
             scheme_id = request.POST['scheme']
             qs = '?scheme=%s' % scheme_id

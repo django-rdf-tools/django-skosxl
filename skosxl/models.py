@@ -7,6 +7,7 @@
 # 
 # now synced with a configurable RDF mapping and export module django-rdf-io
 from __future__ import unicode_literals
+from __future__ import print_function
 from django.db import models
 from django.db.models import F
 from django_extensions.db import fields as exfields
@@ -838,7 +839,7 @@ class ImportedConceptScheme(ImportedResource):
                 try:
                     term=url[ url.rindex('/')+1:]
                 except:
-                    print "Non URL format - e.g. blank node found - ignoring"  
+                    print("Non URL format - e.g. blank node found - ignoring")  
                     continue
 
             (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term, defaults=classDefaults)
