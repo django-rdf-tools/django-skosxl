@@ -9,7 +9,8 @@ from rdf_io.admin import publish_set_action
 from rdf_io.models import ConfigVar
 
 from django.forms import ModelForm, ModelChoiceField
-from django.core.urlresolvers import resolve
+#from django.core.urlresolvers import resolve # < Django 1.11
+from django.urls import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import Group
 #import autocomplete_light.shortcuts as al

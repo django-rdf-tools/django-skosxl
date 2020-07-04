@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 from rdf_io.models import Namespace, ObjectType,ObjectMapping,AttributeMapping , ChainedMapping
 from django.contrib.contenttypes.models import ContentType
@@ -28,7 +29,7 @@ def load_base_namespaces(url_base):
     Namespace.objects.get_or_create( uri='http://www.w3.org/2001/XMLSchema#', defaults = { 'prefix' : 'xsd' , 'notes': 'XSD' } )
     Namespace.objects.get_or_create( uri='http://www.w3.org/2002/07/owl#', defaults = { 'prefix' : 'owl' , 'notes': 'OWL' } )
 
-    print "loading base namespaces for SKOSXL"
+    print("loading base namespaces for SKOSXL")
     
 def load_urirules(url_base) :
     """

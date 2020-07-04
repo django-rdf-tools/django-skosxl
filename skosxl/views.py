@@ -1,5 +1,5 @@
 # # -*- coding:utf-8 -*-
-from django.shortcuts import render_to_response, redirect
+from django.shortcuts import render, redirect
 from skosxl.models import *
 from django.template import RequestContext
 from django.shortcuts import get_object_or_404
@@ -44,7 +44,7 @@ def scheme_detail(request,id):
     scheme = Scheme.objects.get(id=id)
     context['object'] = scheme
     context['concepts'] = Concept.objects.filter(scheme=scheme)
-    return render_to_response('scheme_detail.html',context,RequestContext(request))
+    return render('scheme_detail.html',context,RequestContext(request))
 
 def concept_detail(request,id):
     concept= Concept.objects.get(id=id)
@@ -53,7 +53,7 @@ def concept_detail(request,id):
     context['preflabels'] = Label.preflabels.filter(concept=concept)
     context['altlabels'] = Label.altlabels.filter(concept=concept)
     context['notations'] = Notation.objects.filter(concept=concept)
-    return render_to_response('concept_detail.html',context,RequestContext(request))
+    return render('concept_detail.html',context,RequestContext(request))
 
 
 def tag_detail(request,id):
@@ -62,7 +62,7 @@ def tag_detail(request,id):
     context['object'] = tag
     # example
     # context['initiatives'] = Initiative.objects.filter(tags=tag)
-    return render_to_response('tag_detail.html',context,RequestContext(request))
+    return render('tag_detail.html',context,RequestContext(request))
 
 def json_scheme_tree(request,scheme_id,admin_url):
     scheme = Scheme.objects.get(id=scheme_id)
@@ -72,5 +72,5 @@ def json_scheme_tree(request,scheme_id,admin_url):
 def tag_list(request):
     context = {}
     context['tags'] = Label.objects.all()
-    return render_to_response('tag_list.html',context,RequestContext(request))
+    return render('tag_list.html',context,RequestContext(request))
  
