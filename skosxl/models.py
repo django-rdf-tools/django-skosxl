@@ -6,7 +6,9 @@
 # http://www.w3.org/2008/05/skos-xl
 # 
 # now synced with a configurable RDF mapping and export module django-rdf-io
-from __future__ import unicode_literals
+#from __future__ import unicode_literals
+#from __future__ import print_function
+
 from django.db import models
 from django.db.models import F
 from django_extensions.db import fields as exfields
@@ -15,7 +17,8 @@ from django.utils.translation import ugettext_lazy
 from extended_choices import Choices
 from model_utils import FieldTracker
 from django.core.exceptions import ValidationError
-from django.core.urlresolvers import reverse
+#from django.core.urlresolvers import reverse # Django < 1.11
+from django.urls import reverse
 # update this to use customisable setting
 from django.contrib.auth.models import Group
 from django.conf import settings
@@ -23,7 +26,7 @@ from django.db.models.signals import post_save
 
 from django.contrib.contenttypes.models import ContentType
 
-from django.utils.encoding import python_2_unicode_compatible
+#from django.utils.encoding import python_2_unicode_compatible
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
@@ -97,9 +100,8 @@ class SchemeMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
-    subject      = models.ForeignKey('Scheme', related_name="metaprops") 
- 
-@python_2_unicode_compatible        
+    subject      = models.ForeignKey('Scheme', related_name="metaprops", on_delete=models.CASCADE) 
+    
 class Scheme(models.Model):
     objects = SchemeManager()
     skip_post_save = False
@@ -111,7 +113,7 @@ class Scheme(models.Model):
     modified    = exfields.ModificationDateTimeField(_('modified'),null=True)
     definition  = models.TextField(_('definition'), blank=True)
     changenote = models.TextField(_('change note'), blank=True)
-    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'),
+    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'), on_delete=models.CASCADE,
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
     
     # metaprops = models.ManyToManyField(
@@ -258,16 +260,13 @@ class Scheme(models.Model):
         return json.dumps(ja_tree, sort_keys=True,
                           indent=4, separators=(',', ': '))
  
-    
-    
-
         
 class ConceptRank(models.Model):
     """ a ordered, labelled ranking and typing mechanism for Concept Hierarchies. 
     
     The numerical ordering may be post-calculated on bulk import from broader-narrower relationships amongst ranked concepts.
     Ranking systems are Scheme specific. """
-    scheme=models.ForeignKey(Scheme)
+    scheme=models.ForeignKey(Scheme, on_delete=models.CASCADE)
     level= models.PositiveSmallIntegerField(blank=True, null=True, help_text=_('the depth this type of concept represents'))
     pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Label of concept'),max_length=255)
     uri= models.URLField(_('definition reference'),blank=True,null=True,help_text=_('URI of definition'),max_length=255)
@@ -322,7 +321,7 @@ class ConceptMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
-    subject       = models.ForeignKey("Concept", related_name="metaprops")     
+    subject       = models.ForeignKey("Concept", related_name="metaprops", on_delete=models.CASCADE)     
 
             
 class ConceptManager(models.Manager):    
@@ -336,9 +335,7 @@ def validate_scheme(self,scheme):
             scheme = Scheme.objects.get(slug=DEFAULT_SCHEME_SLUG)
         except:
             raise ValidationError("No concept scheme specified and no default scheme available")
-
-            
-@python_2_unicode_compatible        
+       
 class Concept(models.Model):
     objects = ConceptManager()
     skip_post_save = False
@@ -352,8 +349,8 @@ class Concept(models.Model):
     
     definition  = models.TextField(_('definition'), blank=True)
 #    notation    = models.CharField(blank=True, null=True, max_length=100)
-    scheme      = models.ForeignKey(Scheme, blank=True, null=True, validators=[ validate_scheme] ,help_text=_('Note - currently only membership of a single scheme supported'))
-    rank          = models.ForeignKey(ConceptRank, blank=True,null=True, help_text=_('Rank (depth) of Concept in ranked hierarchy, if applicable'))
+    scheme      = models.ForeignKey(Scheme, on_delete=models.CASCADE, blank=True, null=True, validators=[ validate_scheme] ,help_text=_('Note - currently only membership of a single scheme supported'))
+    rank          = models.ForeignKey(ConceptRank, on_delete=models.CASCADE, blank=True,null=True, help_text=_('Rank (depth) of Concept in ranked hierarchy, if applicable'))
     prefStyle = models.CharField(max_length=255, blank=True, null=True, help_text='Preferred style - either a #RGB colour or a CSS style string')
     changenote  = models.TextField(_('change note'),blank=True)
     created     = exfields.CreationDateTimeField(_('created'))
@@ -361,8 +358,10 @@ class Concept(models.Model):
     status      = models.PositiveSmallIntegerField( _('review status'),
                                                     choices=REVIEW_STATUS, 
                                                     default=REVIEW_STATUS.active)
-    supersedes = models.ForeignKey("Concept", blank=True,null=True,related_name='superseded',verbose_name=_('supersedes concept'), help_text=_('Select a concept to invalidate and replace with this concept. If empty, save concept to identify the relevant ConceptScheme. In a future update this should be supported by a wizard that copies the details of the superseded concept and reviews changes')   )                                             
-    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_('django user'),editable=False)
+    supersedes = models.ForeignKey("Concept", blank=True,null=True,related_name='superseded',
+                                    verbose_name=_('supersedes concept'),
+                                    on_delete=models.CASCADE, help_text=_('Select a concept to invalidate and replace with this concept. If empty, save concept to identify the relevant ConceptScheme. In a future update this should be supported by a wizard that copies the details of the superseded concept and reviews changes')   )                                             
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True,null=True,verbose_name=_('django user'),editable=False)
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Leave blank to inherit namespace from containing scheme'))    
     author_uri  = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=False)    
 
@@ -472,10 +471,10 @@ class Concept(models.Model):
 
 class CollectionMember(models.Model):
     """ potentially ordered membership of collection """
-    collection = models.ForeignKey('Collection')
+    collection = models.ForeignKey('Collection', on_delete=models.CASCADE,)
     index = models.PositiveSmallIntegerField(blank=True,null=True)
-    concept = models.ForeignKey('Concept',blank=True,null=True)
-    subcollection = models.ForeignKey('Collection',related_name='subcollection', blank=True,null=True)
+    concept = models.ForeignKey('Concept', on_delete=models.CASCADE, blank=True,null=True)
+    subcollection = models.ForeignKey('Collection', on_delete=models.CASCADE, related_name='subcollection', blank=True,null=True)
     class Meta :
         ordering = [ 'index', ]
         unique_together = ['collection','concept','subcollection']
@@ -497,13 +496,13 @@ class CollectionMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
     """
-    subject      = models.ForeignKey('Collection', related_name="metaprops") 
+    subject      = models.ForeignKey('Collection', related_name="metaprops", on_delete=models.CASCADE) 
              
 class Collection(models.Model):
     """ SKOS Collection """
     pref_label = models.CharField(_('preferred label'),blank=True,null=True,help_text=_('Collections only support single label currently'),max_length=255)
     uri         = models.CharField(blank=True,max_length=250,verbose_name=_('main URI'),editable=True, help_text=_('Collection URI'))    
-    scheme  = models.ForeignKey(Scheme, help_text=_('Scheme containing Collection'))
+    scheme  = models.ForeignKey(Scheme, on_delete=models.CASCADE,  help_text=_('Scheme containing Collection'))
     ordered = models.BooleanField(default=False, verbose_name=_('Collection is ordered'))
     members = models.ManyToManyField( "self",symmetrical=False,
                                             through='CollectionMember',
@@ -526,7 +525,7 @@ class Collection(models.Model):
   
   
 class Notation(models.Model):
-    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='notations')
+    concept     = models.ForeignKey(Concept, on_delete=models.CASCADE, blank=True,null=True,verbose_name=_('main concept'),related_name='notations')
     code =  models.CharField(_('notation'),max_length=100, null=False)
     codetype = CURIE_Field(max_length=200,verbose_name=_('(datatype)'),default='xsd:string')
     def __unicode__(self):
@@ -552,8 +551,7 @@ class PrefLabelManager(models.Manager):
 class AltLabelManager(models.Manager):
    def get_queryset(self):
         return super(AltLabelManager, self).get_queryset().filter(label_type=LABEL_TYPES.altLabel)
-
-@python_2_unicode_compatible        
+       
 class Label(models.Model):
     '''
     Defines a SKOS-XL Label Class, and also a Tag in django-taggit
@@ -563,13 +561,13 @@ class Label(models.Model):
     # temporary replacement while disconected from taggit..
     slug        = exfields.AutoSlugField(populate_from=('label_text'),  allow_duplicates=True)
 
-    concept     = models.ForeignKey(Concept,blank=True,null=True,verbose_name=_('main concept'),related_name='labels')
+    concept     = models.ForeignKey(Concept, on_delete=models.CASCADE, blank=True,null=True,verbose_name=_('main concept'),related_name='labels')
     label_type  = models.PositiveSmallIntegerField(_('label type'), choices=tuple(LABEL_TYPES), default= LABEL_TYPES.prefLabel)
     label_text  = models.CharField(_('label text'),max_length=100, null=False)
     language    = models.CharField(_('language'),max_length=10, default=DEFAULT_LANG)
  
     #metadata
-    user        = models.ForeignKey(settings.AUTH_USER_MODEL,blank=True,null=True,verbose_name=_('django user'),editable=False)
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE, blank=True,null=True,verbose_name=_('django user'),editable=False)
     uri         = models.CharField(_('author URI'),blank=True,max_length=250,editable=True)    
     author_uri  = models.CharField('main URI',blank=True,max_length=250,editable=True)    
     created     = exfields.CreationDateTimeField(_('created'))
@@ -636,8 +634,8 @@ class SemRelation(models.Model):
     A model linking two skos:Concept
     Defines a sub-property of skos:semanticRelation property from the origin concept to the target concept
     '''
-    origin_concept = models.ForeignKey(Concept,related_name='rel_origin',verbose_name=(_('Origin')))
-    target_concept = models.ForeignKey(Concept,related_name='rel_target',verbose_name=(_('Target')))
+    origin_concept = models.ForeignKey(Concept, on_delete=models.CASCADE, related_name='rel_origin',verbose_name=(_('Origin')))
+    target_concept = models.ForeignKey(Concept,on_delete=models.CASCADE, related_name='rel_target',verbose_name=(_('Target')))
     rel_type = models.PositiveSmallIntegerField( _('Type of semantic relation'),choices=REL_TYPES, 
                                                     default=REL_TYPES.narrower)
 
@@ -669,7 +667,7 @@ class SemRelation(models.Model):
 #         
 class MapRelation(models.Model):
 
-    origin_concept = models.ForeignKey(Concept,related_name='map_origin',verbose_name=(_('Local concept to map')))
+    origin_concept = models.ForeignKey(Concept,on_delete=models.CASCADE, related_name='map_origin',verbose_name=(_('Local concept to map')))
 #     target_concept = models.ForeignKey(Concept,related_name='map_target',verbose_name=(_(u'Remote concept')),blank=True, null=True)
 #     target_label = models.CharField(_(u'Preferred label'),max_length=255)
     uri = models.CharField(_('Target Concept URI'), max_length=250)
@@ -691,7 +689,6 @@ COLLECTION_NODE=URIRef('http://www.w3.org/2004/02/skos/core#Collection')
 HASTOPCONCEPT_NODE=URIRef('http://www.w3.org/2004/02/skos/core#hasTopConcept')
 MEMBER=URIRef('http://www.w3.org/2004/02/skos/core#member')
 
-@python_2_unicode_compatible
 class ImportedConceptScheme(ImportedResource):
     
     def __str__(self):
@@ -701,7 +698,7 @@ class ImportedConceptScheme(ImportedResource):
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)
         self.resource_type = TYPE_INSTANCE
 
-    authgroup = models.ForeignKey(Group,blank=True,null=True,verbose_name=_('Authorised maintainers'),
+    authgroup = models.ForeignKey(Group,on_delete=models.CASCADE, blank=True,null=True,verbose_name=_('Authorised maintainers'),
         help_text=_('Leave blank to allow only superuser control. Members of group with staff level access will be able to use admin interface'))
    
     target_scheme = models.URLField(blank=True, verbose_name=(_('target scheme - leave blank to use default defined in resource')))
@@ -838,7 +835,7 @@ class ImportedConceptScheme(ImportedResource):
                 try:
                     term=url[ url.rindex('/')+1:]
                 except:
-                    print "Non URL format - e.g. blank node found - ignoring"  
+                    print("Non URL format - e.g. blank node found - ignoring")  
                     continue
 
             (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term, defaults=classDefaults)
