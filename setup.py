@@ -28,7 +28,7 @@ setup(
     #download_url='git://github.com/quinode/django-skosxl.git',
     zip_safe=False,
     install_requires = [ # 'django-taggit>=0.9.3',
-                        # 'SPARQLWrapper>=1.5.0',
+                         'SPARQLWrapper>=1.5.0',
                         'django-extensions>=0.7.1',
                         'django-admin-tools>=0.4.1',
                         'django-extended-choices',
