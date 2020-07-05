@@ -216,7 +216,7 @@ class ConceptMetaInline(admin.TabularInline):
 class ConceptAdminForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(ConceptAdminForm, self).__init__(*args, **kwargs)
-        if self.instance :
+        if self.instance:
             self.fields['supersedes'].queryset = Concept.objects.filter(scheme=self.instance.scheme)
         else:
             self.fields['supersedes'].queryset = Concept.objects.filter(scheme=None)
@@ -409,6 +409,7 @@ class OwnedByFilter(admin.SimpleListFilter):
 
 class SchemeBase(Scheme):
     verbose_name = 'Scheme without its member concepts - use Scheme if list is small'
+    #fields = ('uri')
     class Meta:
         proxy = True
 
@@ -573,10 +574,11 @@ class DerivedSchemesInline(admin.TabularInline):
     readonly_fields = ('label',)
     model = ImportedConceptScheme.schemes.through
     fields = ('label',)
+    #model=Scheme
     extra = 0
     can_delete = False
     def label(self,instance):
-        return '<a href="/admin/skosxl/scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label)
+        return mark_safe('<a href="/admin/skosxl/scheme/%s/change/" target="_new">%s</a>' % (instance.scheme.id, instance.scheme.pref_label))
     label.allow_tags = True
 
 def bulk_resave(modeladmin, request, queryset):

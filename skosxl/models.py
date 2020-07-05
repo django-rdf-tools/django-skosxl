@@ -122,7 +122,7 @@ class Scheme(models.Model):
         return self.pref_label
         
     def __str__(self):
-        return self.pref_label.encode('utf8')
+        return str(self.pref_label.encode('utf8'))
         
     def save(self,*args,**kwargs):
         if not self.pref_label :
@@ -382,8 +382,8 @@ class Concept(models.Model):
         return "".join((self.term, " (", self.uri , ")" ))
 
     def __str__(self):
-        return "".join((self.term, " (", self.uri , ")" )).encode('utf8')
-    
+        return str("".join((self.term, " (", self.uri , ")" )).encode('utf8'))
+        
     def natural_key(self):
         return ( self.uri , )
 #    natural_key.dependencies = ['scheme']
@@ -692,7 +692,7 @@ MEMBER=URIRef('http://www.w3.org/2004/02/skos/core#member')
 class ImportedConceptScheme(ImportedResource):
     
     def __str__(self):
-        return ( ' '.join( filter(None,(self.resource_type,':', self.file.__unicode__(), self.remote )))) 
+        return str( ' '.join( filter(None,(self.resource_type,':', self.file.name, self.remote )))) 
     
     def __init__(self, *args, **kwargs):     
         super(ImportedConceptScheme, self).__init__(*args, **kwargs)

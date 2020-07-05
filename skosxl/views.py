@@ -40,12 +40,14 @@ def loadinit(req) :
 
 def scheme_detail(request,id):
     context = {}
-#    import pdb; pdb.set_trace()
     scheme = Scheme.objects.get(id=id)
     context['object'] = scheme
     context['concepts'] = Concept.objects.filter(scheme=scheme)
-    return render('scheme_detail.html',context,RequestContext(request))
-
+#    context['title'] = "Scheme detail"
+#    return render('scheme_detail.html',context,RequestContext(request))
+#def render(request, template_name, context=None, content_type=None, status=None, using=None):
+    return render(request,'scheme_detail.html',context=context)
+ 
 def concept_detail(request,id):
     concept= Concept.objects.get(id=id)
     context = {}
@@ -53,8 +55,8 @@ def concept_detail(request,id):
     context['preflabels'] = Label.preflabels.filter(concept=concept)
     context['altlabels'] = Label.altlabels.filter(concept=concept)
     context['notations'] = Notation.objects.filter(concept=concept)
-    return render('concept_detail.html',context,RequestContext(request))
-
+#    return render('concept_detail.html',context,RequestContext(request))
+    return render(request,'concept_detail.html',context=context)
 
 def tag_detail(request,id):
     context = {}
@@ -62,8 +64,9 @@ def tag_detail(request,id):
     context['object'] = tag
     # example
     # context['initiatives'] = Initiative.objects.filter(tags=tag)
-    return render('tag_detail.html',context,RequestContext(request))
-
+#    return render('tag_detail.html',context,RequestContext(request))
+    return render(request,'tag_detail.html',context=context)
+    
 def json_scheme_tree(request,scheme_id,admin_url):
     scheme = Scheme.objects.get(id=scheme_id)
     return HttpResponse(    scheme.json_tree(admin_url=True), 
