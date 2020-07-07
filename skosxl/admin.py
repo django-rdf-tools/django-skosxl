@@ -18,7 +18,10 @@ from django.contrib.admin import widgets
 from django.contrib import messages
 from django.shortcuts import render
 from django.utils.safestring import mark_safe
-
+try:
+    from django.urls import resolve  
+except:
+    from django.core.urlresolvers import resolve    
 #from skosxl.utils.autocomplete_admin import FkAutocompleteAdmin, InlineAutocompleteAdmin
 
 
@@ -170,17 +173,17 @@ class RelInline(admin.TabularInline):
         Note that this only works for Inlines, because the `parent_model`
         is not available in the regular admin.ModelAdmin as an attribute.
         """
-        from django.core.urlresolvers import resolve
+
         resolved = resolve(request.path_info)
         if resolved.args:
             return self.parent_model.objects.get(pk=resolved.args[0])
         return None
     
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         self.parent = self.get_parent_object_from_request(request)
 
         # No parent - return original has_add_permission() check
-        return super(RelInline, self).has_add_permission(request)
+        return super(RelInline, self).has_add_permission(request,self.parent)
     
     
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):

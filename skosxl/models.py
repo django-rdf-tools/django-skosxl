@@ -382,7 +382,7 @@ class Concept(models.Model):
         return "".join((self.term, " (", self.uri , ")" ))
 
     def __str__(self):
-        return str("".join((self.term, " (", self.uri , ")" )).encode('utf8'))
+        return str("".join((str(self.term), " (", str(self.uri) , ")" )).encode('utf8'))
         
     def natural_key(self):
         return ( self.uri , )
