@@ -274,6 +274,9 @@ class ConceptRank(models.Model):
 
     def __unicode__(self):
         return self.pref_label
+
+    def __str__(self):
+        return str( self.__unicode__())    
         
     @staticmethod
     def calcLevels(scheme, topRank=None):
@@ -492,6 +495,9 @@ class CollectionMember(models.Model):
         else:
             return 'what the?'
 
+    def __str__(self):
+        return str( self.__unicode__())
+        
 class CollectionMeta(AttachedMetadata):
     """
         extensible metadata using rdf_io managed reusable generic metadata properties
@@ -510,10 +516,14 @@ class Collection(models.Model):
                                             help_text=_('Members are optional indexed references to Concepts'))
     class Meta: 
         unique_together = ['scheme','uri']
+        
     def __unicode__(self):
         return "".join([_f for _f in (self.pref_label, " (", self.uri , ")" ) if _f])
-    
-    @staticmethod
+
+    def __str__(self):
+        return str( self.__unicode__())
+        
+    @staticmethod   
     def propagate_term2label(scheme):
         """ propagate term from last part of URI to preferred label if missing """
         nonames = Collection.objects.filter(scheme=scheme,pref_label__isnull=True)
@@ -531,6 +541,9 @@ class Notation(models.Model):
     def __unicode__(self):
         return self.code + '^^<' + self.codetype + '>'  
     
+    def __str__(self):
+        return str( self.__unicode__())
+        
     def clean(self):
         # TODO check prefix
         pass
