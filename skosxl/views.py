@@ -15,7 +15,6 @@ from skosxl.models import Scheme,Concept,SemRelation
 
 from SPARQLWrapper import SPARQLWrapper,JSON, XML
 
-import pprint
 
 
 from importlib import import_module
