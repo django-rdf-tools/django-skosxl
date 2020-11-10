@@ -122,7 +122,7 @@ class Scheme(models.Model):
         return self.pref_label
         
     def __str__(self):
-        return str(self.pref_label.encode('utf8'))
+        return str(self.pref_label)
         
     def save(self,*args,**kwargs):
         if not self.pref_label :
@@ -331,7 +331,7 @@ class ConceptManager(models.Manager):
     def get_by_natural_key(self, uri):
         return self.get( uri = uri)
 
-def validate_scheme(self,scheme):
+def validate_scheme(scheme):
     print ( "validating scheme" )
     if scheme is None:
         try:
@@ -385,7 +385,7 @@ class Concept(models.Model):
         return "".join((self.term, " (", self.uri , ")" ))
 
     def __str__(self):
-        return str("".join((str(self.term), " (", str(self.uri) , ")" )).encode('utf8'))
+        return str("".join((str(self.term), " (", str(self.uri) , ")" )).encode('utf8').decode('unicode-escape'))
         
     def natural_key(self):
         return ( self.uri , )
