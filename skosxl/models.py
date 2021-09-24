@@ -30,7 +30,7 @@ from django.contrib.contenttypes.models import ContentType
         
 #from taggit.models import TagBase, GenericTaggedItemBase
 #from taggit.managers import TaggableManager
-from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field, AttachedMetadata, TYPE_INSTANCE, makenode
+from rdf_io.models import Namespace, GenericMetaProp, ImportedResource, CURIE_Field, RDFpath_Field, AttachedMetadata, TYPE_INSTANCE
 from rdflib import Graph,namespace
 from rdflib.term import URIRef, Literal
 import itertools
@@ -50,7 +50,7 @@ REL_TYPES = Choices(
     # ('narrowerTransitive',  1,  u'Has a narrower (transitive) concept'),
     ('broader',             0,  _('has a broader concept')),
     ('narrower',            1,  _('has a narrower concept')),
-    ('related',             2,  _('has a related concept')),    
+    ('related',             2,  _('has a related concept')),
 )
 
 reverse_map = {   
@@ -66,7 +66,7 @@ MATCH_TYPES = Choices(
     ('closeMatch',   1,  _('matches closely')),
     ('broadMatch',   2,  _('has a broader match')),
     ('narrowMatch',  3,  _('has a narrower match')),
-    ('relatedMatch', 4,  _('has a related match')),    
+    ('relatedMatch', 4,  _('has a related match')),
 )
 
 # TODO - allow these to be defined by the environment - or extended as needed.
@@ -840,8 +840,10 @@ class ImportedConceptScheme(ImportedResource):
         scheme_obj.save()
         # now process any related objects - concepts first then any collections
         # import pdb; pdb.set_trace()
-        for c in self.getConcepts(schemegraph,gr):
-            url = str(c)
+        # force this to be a list we can search later
+        concepts = [ str(c) for c in self.getConcepts(schemegraph,gr)]
+        for url in concepts:
+
             try: 
                 term=url[ url.rindex('#')+1:]
             except :
@@ -851,7 +853,7 @@ class ImportedConceptScheme(ImportedResource):
                     print("Non URL format - e.g. blank node found - ignoring")  
                     continue
 
-            (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=str(c), term=term, defaults=classDefaults)
+            (concept_obj,new) = conceptClass.objects.get_or_create(scheme=scheme_obj, uri=url, term=term, defaults=classDefaults)
             concept_obj.skip_post_save = True
             #
             rankuri = None
@@ -859,14 +861,14 @@ class ImportedConceptScheme(ImportedResource):
             rankdepth = None
             if self.rankURIProperty :           
                 try:
-                    rankuri = self.getPathVal(gr,c,self.rankURIProperty) 
+                    rankuri = self.getPathVal(gr,url,self.rankURIProperty)
                     # assert rankuri
                 except:
 
                     raise ValueError ("Unable to resolve rank URI reference, if specified must be present for all Concepts")    
             if self.rankNameProperty :
                 try:
-                    rankname = self.getPathVal(gr,c,self.rankNameProperty) 
+                    rankname = self.getPathVal(gr,url,self.rankNameProperty)
                     # assert rankname
                 except:
                     raise ValueError ("Unable to resolve rank Name reference, if specified must be present for all Concepts")
@@ -874,7 +876,7 @@ class ImportedConceptScheme(ImportedResource):
                 rankname = rankuri.replace('#','/').split('/')[-1]
             if self.rankDepthProperty :
                 try:
-                    rankdepth = self.getPathVal(gr,c,self.rankDepthProperty) 
+                    rankdepth = self.getPathVal(gr,url,self.rankDepthProperty)
                     # assert rankdepth
                 except:
                     raise ValueError ("Unable to resolve rank Name reference, if specified must be present for all Concepts")
@@ -884,10 +886,10 @@ class ImportedConceptScheme(ImportedResource):
                 concept_obj.rank, new  = ConceptRank.objects.get_or_create(scheme=scheme_obj, uri=rankuri, pref_label=rankname, level=rankdepth)
             
             # now all the rest of the properties
-            related_objects = _set_object_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,metapropClass=ConceptMeta)
+            related_objects = _set_object_properties(gr=gr,uri=url,obj=concept_obj,target_map=target_map_concept,metapropClass=ConceptMeta)
             concept_obj.save()
             try:
-                _set_relatedobject_properties(gr=gr,uri=c,obj=concept_obj,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
+                _set_relatedobject_properties(gr=gr,uri=url,obj=concept_obj,concepts_to_create=concepts,target_map=target_map_concept,related_objects=related_objects,conceptClass=conceptClass, classDefaults=classDefaults)
             except Exception as e:
                 print("Error in concept building: %s" % str(e))
                 self.importerrors.append(e)
@@ -965,9 +967,35 @@ class ImportedConceptScheme(ImportedResource):
         return scheme_obj
     
     def getConcepts(self,s,gr):
-        found,conceptList = _has_items(gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE))      
-        if not found:
-          conceptList = gr.query("SELECT DISTINCT ?concept  WHERE { ?concept <http://www.w3.org/2004/02/skos/core#inScheme> <%s> . MINUS { ?concept a <http://www.w3.org/2004/02/skos/core#Collection> } }" % ( s)) 
+        conceptList = gr.query("""
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            SELECT DISTINCT ?concept 
+            WHERE { 
+              { 
+                    ?concept <http://www.w3.org/2004/02/skos/core#inScheme> <%s> 
+                    OPTIONAL {
+                     ?concept a ?type 
+                }
+                     BIND ( COALESCE ( ?type, skos:Concept ) AS ?assumedtype )
+                     FILTER (?assumedtype = skos:Concept )
+                
+              }
+              UNION 
+              {
+              { ?concept a skos:Concept }
+              UNION
+                {
+                  ?concept skos:broader|skos:narrower|skos:topConceptOf ?anything 
+                }
+                UNION 
+                {
+                   ?something skos:broader|skos:narrower|skos:hasTopConcept ?concept
+                }
+                FILTER( STRSTARTS( STR(?concept), "%s" ))
+              }
+}""" % ( s,s))
+        if not conceptList:
+          conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
         return conceptList
         
     def processSameAs(self,s,gr):
@@ -1026,7 +1054,7 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
         
         # loop over scheme properties and set
         related_objects = ()
-        for (p,o) in gr.predicate_objects(subject=uri) :
+        for (p,o) in gr.predicate_objects(subject=URIRef(str(uri))) :
             # get mapped properties
             prop = target_map.get(p)
             if prop:
@@ -1053,7 +1081,7 @@ def _set_object_properties(gr,uri,obj,target_map,metapropClass) :
                                
         return related_objects
         
-def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,conceptClass,classDefaults) :                   
+def _set_relatedobject_properties(gr=None,uri=None,obj=None,target_map=None,concepts_to_create=[],related_objects=[],conceptClass=Concept,classDefaults=None) :
         # process all the related objects
 
         for (p,o,obj_type_name) in related_objects :
@@ -1076,8 +1104,14 @@ def _set_relatedobject_properties(gr,uri,obj,target_map, related_objects,concept
                 # find a matching object 
                 object_prop = prop['object_field']
                 # find a way to pass in an override for this sort of specific thing if we generalised this
-                (linked_object,new) = conceptClass.objects.get_or_create(uri=str(o), scheme=obj.scheme, defaults=classDefaults)
-                values[object_prop] = linked_object
+                if str(o) in concepts_to_create or conceptClass  != Concept :
+                    (linked_object,new) = conceptClass.objects.get_or_create(uri=str(o), scheme=obj.scheme, defaults=classDefaults)
+                    values[object_prop] = linked_object
+                else:
+                    # add it as a metproperty - not a django object reference
+                    metaprop, created = GenericMetaProp.objects.get_or_create(uri=str(p))
+                    ConceptMeta.objects.get_or_create(subject=obj, metaprop=metaprop, value=o.n3())
+
             if prop.get('set_fields') :
                 for (fname,val) in prop.get('set_fields') :
                     values[fname] = val
