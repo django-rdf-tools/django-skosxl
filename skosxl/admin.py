@@ -346,12 +346,12 @@ class ConceptInline(admin.TabularInline):
     model = Concept
 #    list_fields = ('pref_label', )
     show_change_link = True
-    max_num = 20
+    max_num = 0
     fields = ('top_concept','pref_label','term','rank')
-    ordering = ('top_concept','rank','pref_label')
+    ordering = ('-top_concept','rank','pref_label')
  #   list_display = ('pref_label',)
     related_search_fields = {'concept' : ('prefLabel','definition')}
-    extra = 0
+    extra = 1
     
 
 class CollectionInline(admin.TabularInline):
