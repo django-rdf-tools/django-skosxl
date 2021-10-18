@@ -841,7 +841,7 @@ class ImportedConceptScheme(ImportedResource):
         # now process any related objects - concepts first then any collections
         # import pdb; pdb.set_trace()
         # force this to be a list we can search later
-        concepts = [ str(c) for c in self.getConcepts(schemegraph,gr)]
+        concepts = self.getConcepts(schemegraph,gr)
         for url in concepts:
 
             try: 
@@ -995,8 +995,8 @@ class ImportedConceptScheme(ImportedResource):
               }
 }""" % ( s,s))
         if not conceptList:
-          conceptList = gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE)
-        return conceptList
+          return  [ str(c) for c in gr.subjects(predicate=RDFTYPE_NODE, object=CONCEPT_NODE) ]
+        return [ str(c[0]) for c in conceptList ]
         
     def processSameAs(self,s,gr):
         owl,created = Namespace.objects.get_or_create(prefix="owl", uri="http://www.w3.org/2002/07/owl#")
