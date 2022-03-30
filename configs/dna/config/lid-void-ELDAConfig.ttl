@@ -1,0 +1,167 @@
+##############################################################
+#
+#
+# This an API to support exposing a view of available resources for a set of datasets described in VOID
+# (combinations of views, formats, languages)
+# This can be used to discover the alternative information resource URI for a given LID - by inferring the resources exposed at the set level by RESTful services for example.
+#
+# Author: Rob Atkinson, CSIRO Land & Water
+#
+#
+# Copyright (c) CSIRO 2012
+# Re-use permitted according to Creative Commons Attribution 3.0 Australia (CC BY 3.0)
+# see <http://creativecommons.org/licenses/by/3.0/au/>
+#
+# Contact: Robert A Atkinson
+#          CSIRO Land and Water
+#          Australia
+#          rob.atkinson "at" csiro.au
+#
+# The configuration should only need the SPARQL endpoint customised (To be confirmed)
+#
+##############################################################
+
+## Common prefixes - don't change these.
+@prefix api:     <http://purl.org/linked-data/api/vocab#> .
+@prefix dc:      <http://purl.org/dc/elements/1.1/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix elda:    <http://www.epimorphics.com/vocabularies/lda#> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+@prefix owl:     <http://def.seegrid.csiro.au/isotc211//owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+@prefix lid:    <http://id.sirf.net/def/schema/lid/> .
+
+
+@prefix void: <http://rdfs.org/ns/void#> .
+
+##############################################################
+##
+##
+# what we know about ELDA apis in general
+
+# not much ?
+
+# what we know about ELDA Viewers in general
+api:Viewer
+    lid:hasFormat lid:rdfxml, lid:rdfttl, lid:html, lid:json, lid:xml .
+
+lid:hasFormat
+    a rdf:Property;
+    rdfs:Domain api:Viewer;
+    rdfs:Range lid:format;
+    .
+
+
+# and a basic API...
+#
+lid:lid a api:API;
+    api:maxPageSize "1000";
+    api:defaultPageSize "200";
+    api:defaultFormatter [
+        a api:XsltFormatter;
+        api:name "html";
+        api:stylesheet "lda-assets/resources/dna/transform/make_lids.xsl";
+        api:mimeType "text/html";
+    ];
+
+    api:variable [api:name "webapp"; api:value "/dna"];
+    api:variable
+        [api:name "SISSDefaultResourceDirBase"; api:value "{webapp}/lda-assets/resources/siss-default/"],
+        [api:name "myResourceDirBase"; api:value "{webapp}/lda-assets/resources/dna/"],
+        [api:name "_resourceRoot"; api:value "{webapp}/lda-assets/"],
+        [api:name "resourceEndPoint"; api:value "{webapp}/lid/resourcelist?baseuri="],
+        [api:name "serviceTitle"; api:value "Linked Data Identifier API"],
+        [api:name "serviceAuthor"; api:value "Rob Atkinson"],
+        [api:name "serviceAuthorEmail"; api:value "Rob.Atkinson@metalinkage.com,au"],
+        [api:name "serviceHomePage"; api:value "http://usirf.csiro.au"];
+    api:endpoint lid:resourceListEndpoint;
+    api:defaultViewer api:describeViewer;
+    rdfs:label "Linked Data Alternates View API"@en;
+    foaf:primaryTopic <http://sirf.net>;
+    rdfs:seeAlso <https://wiki.csiro.au/display/UNSDI/The+SIRF+API>;
+
+    api:sparqlEndpoint <http://localhost:8080/rdf4j-server/repositories/gaz>
+    .
+
+<http://localhost:8080/rdf4j-server/repositories/gaz> elda:supportsNestedSelect true .
+
+# API endpoint to provide a list of available resources for a given item
+lid:resourceListEndpoint a api:ItemEndpoint;
+        rdfs:comment "Describe what Web resources are available for a given identifier";
+        api:uriTemplate "/lid/resourcelist?baseuri={BURI}&item={objectid}";
+        api:exampleRequestPath "/lid/resourcelist?baseuri=http://id.sirf.net/siset/UNGEGN&item=";
+        api:exampleRequestPath "/lid/resourcelist?baseuri=http://id.sirf.net/siset/UNGEGN&item=IDN";
+        api:exampleRequestPath "/lid/resourcelist?baseuri=http://id.sirf.net/siset/UNGEGN&item=&_format=xml";
+        api:exampleRequestPath "/lid/resourcelist?baseuri=http://id.sirf.net/siset/UNGEGN&item=IDN&_format=ttl";
+        api:exampleRequestPath "/lid/resourcelist?baseuri=http://id.sirf.net/linkset/UNGEGN-UNSTATS&item=";
+        api:itemTemplate "{BURI}";
+        api:variable  [ api:name "BURI"; api:type rdfs:Resource ];
+        api:selector [
+                api:where "?item a void:Dataset  .";
+        ];
+        api:defaultViewer lid:linksViewer;
+        api:viewer lid:linksViewer;
+        .
+
+# incomplete - need to be able to construct properties in result graphs and use invers properties to get a list of links using the api config as data
+lid:linksViewer a api:Viewer;
+    api:name "Resources for item";
+    api:property
+        rdf:type,
+        rdfs:label ,
+            (rdf:type rdfs:label ) ,
+        void:sparqlendpoint,
+        void:feature,
+            (void:feature rdfs:label) ,
+            (void:feature lid:viewName),
+            (void:feature lid:viewType),
+            (void:feature lid:featurescope) ,
+            (void:feature dcterms:hasFormat ) ,
+            (void:feature dcterms:hasFormat lid:ldatoken);
+    .
+
+
+# VOCABULARY
+#
+lid:format
+    a rdfs:Class;
+    rdfs:label "Information about formats and related mime types and extensions"@en;
+    .
+
+lid:fileext
+    a rdfs:Property;
+    rdfs:label "file extension to use to access format"@en;
+    .
+
+lid:handle
+    a rdfs:Property;
+    rdfs:label "handle to use to use in _format parameter to specify format"@en;
+    .
+
+lid:rdfxml
+    rdfs:label "RDF/XML";
+    lid:handle "rdf/xml";  # form used in _format= argument
+    lid:fileext "rdf";     # form used in file extension form
+    .
+
+lid:rdfttl
+    rdfs:label "RDF Turtle";
+    lid:handle "ttl" ;
+    lid:fileext "ttl";
+    .
+
+lid:html
+    rdfs:label "HTML";
+    lid:handle "html";
+    lid:fileext "html";
+    .
+
+lid:viewName 
+    a rdfs:Property ;
+    rdfs:label "short name token for a information viewpoint"@en;
+    api:label "viewName"; 
+	.

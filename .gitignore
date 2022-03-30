@@ -25,3 +25,6 @@
 Icon?
 Thumbs.db
 
+django_skosxl.egg-info/
+skosxl/migrations/0013_auto_*.py
+skosxl/migrations/

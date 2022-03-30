@@ -1,0 +1,247 @@
+## $Header$ 
+#set ( $assets = $vars['SIRFResourceDirBase'] )
+
+<html>
+#parse("page-head-shell.vm")
+<body style="background: #eee">
+
+<img src="${assets}images/sirf-banner.png" alt="SIRF banner" />
+
+<header>
+	<h1>${vars['serviceTitle']}</H1>
+    #if ( ${vars['serviceDescription']} )
+	${vars['serviceDescription']} 
+	#end
+</header>
+
+#macro (tag, $property, $value)
+    "Select items with $property.shortForm() less than $value"
+#end
+
+#macro (selection, $prefix, $symbol, $wording, $property, $value)					
+    <a
+    	title="Select items with $property.shortForm() $wording $value"
+    	href="$thisPage.change($prefix, $property, $value).getURI()"
+    > 
+    	$symbol 
+    </a>
+#end
+
+
+#macro(propnesting71, $item)
+	#foreach ($property in $item.properties)
+
+		<div class="indented">
+			<a href="$property.URI">$property.label.cut()</a>
+			#set ($values = ${item.getValues($property)})
+			#if ( $values.size() > 1 )	
+				<div class="indented" stylex="border-left: 1px solid black">
+			#end
+					
+			#foreach ($value in $values)
+
+					#if ($value.isLiteral())
+						$value
+					#else
+						#if ($value.justALabel)
+						justllabel
+							$value.label.cut()
+						#else
+						subproperties
+							#propnesting71($value)
+						#end
+					#end
+			#if ( $values.size() > 1 )	
+				</div>
+			#end
+
+			#end
+		</div>
+	#end
+#end
+
+#macro(nesting71, $item)
+
+<div class="indented" >
+	## special case properties and labels we will use if we want them - use as an ignore list when finding related features
+	#set ( $metaprops = { "type" : "feature type" , "isPrimaryTopicOf" : "This document" } )
+	
+	## this is a map between related objects and lists of predicates (there may be multiple predicates reported for the relationship)
+	#set ( $plistmap = {} )
+	## save original WrappedNode when all we have left is a property name - this actually will contain just a single example, which can used to get labels or any other annotation available for the property
+	## still needed?
+	#set ( $pnodemap = {} )
+	## save labels for property 
+	#set ( $proplabels = {} )
+	## iterate over properties, to get objects, then add property to a predicate list for each object 
+	## (invert property list to a object list, for each object a list of properties )
+	#foreach ($property in $item.properties)
+		## ignore rdfs  
+		#if ( ! $metaprops.containsKey($property.shortForm().toString() ) )
+
+			$!proplabels.put($property.URI.toString(),$property.label.cut() )
+			$!pnodemap.put($property.URI.toString(),$property )	
+			#set ($values = ${item.getValues($property)})
+			#foreach ($value in $values)
+				#if ($value.isResource() ) 
+					#set ( $plist = $plistmap.get($value.URI.toString())) 
+
+					#if (  ! $plist  )
+						#set ( $plist = {} )
+					#else
+						#set ( $plist = $plistmap.get($value.URI.toString()) )
+					#end
+					$!plist.put($property.URI.toString(), $property.label)
+					#set ( $x = $plistmap.put( $value.URI.toString() , $plist) )
+					
+				#end
+			#end
+		#end
+	#end
+	
+	## now invert again, building an object list for each predicate list
+	#set ( $plistobjlist = {} )
+	#set ( $pliststringkeys = {} )
+	#foreach ( $obj in $plistmap.keySet() )
+			#set ( $plist = $plistmap.get($obj).keySet() )
+			#set ( $pstring = $plist.toString() )
+			#set ( $x = $pliststringkeys.put($pstring,$plistmap.get($obj).keySet())  )
+			#if ( ! $plistobjlist.containsKey($pstring ) )
+				$!plistobjlist.put($pstring, [] )
+			#end
+			#set ($objlist = $plistobjlist.get($pstring) )
+			#set ( $x = $objlist.add($obj) )
+			#set ( $x = $plistobjlist.put($pstring,$objlist) )
+		
+	#end
+	
+	## now process the propertylists
+	#set ( $seen = {} )
+	#foreach ( $plist in $plistobjlist.keySet() )
+		<hr style="color: #fff">
+		<div class="indented">
+			## list the properties as links, and set any one, which can be used to find the claue set
+			#set ($anyprop = "not set" )
+			Relationship: 
+			#foreach ($property in $pliststringkeys.get($plist) )
+				#if ($foreach.count == 2 ) --- equivalents : #end
+				<a href="$property">$proplabels.get($property)</a> 
+				#set ($anyprop = $property )
+			#end
+				
+			## get the list of objects, using whatever property we chose
+			#set ($values = ${item.getValues($pnodemap.get($anyprop))})
+			#set ($num = $values.size() )
+			#if ( $num > 10 ) 
+				#set ($show = 5 )
+			#else
+				#set ($show = $num )
+			#end
+			<HR>
+			Showing $show of $num features
+			
+			#foreach ($value in $values)
+				<div class="indented" stylex="border-left: 1px solid black">
+					#if ($value.isLiteral())
+						<div style="clear: both"> $value</div>
+					#else
+						#if ($value.justALabel)
+							$value.label.cut()
+						#else
+							<div class="indented" >
+							<a href="$value.URI">$value.URI</a>
+							#propnesting71( $value) 
+							</div>
+						#end
+					#end
+				</div>
+				#if ( $foreach.count == $show )
+					#break
+				#end
+			#end
+		</div>
+		
+	#end
+#end
+
+<table width="100%">
+<tr>
+<td valign="top" width="80%">
+
+	<div valign="top" width="100%" id="search-results">
+		<h1>Related features</h1>
+		
+		#foreach ($item in $items) 
+			<div class="itembox">
+			<h2><a href="$item.URI" id="$item.id">$item.label</a></h2>
+			#nesting71($item)
+			</div>
+		#end
+	</div>
+	
+</td>
+
+<td valign="top" width="20%">
+	<div>
+		<div>
+			<div class="right-header">formats</div>
+			<div class="indented" style="margin-top: 1ex; margin-bottom: 1ex">
+				#foreach ($f in $formats)
+					<a href="$f.link">$f.name</a>
+				#end
+			</div>
+		</div>
+		
+		<div class="bordered-panel">
+			<div class="right-header">on this page</div>
+			#foreach ($item in $items)
+				<div style="margin-left: 1ex">&raquo; <a href="#$item.id">$item.label</a></div>
+			#end
+		</div>
+	
+	</div>
+
+</td>
+</tr>
+</table>
+
+<hr>
+<table width="100%">
+<tr>
+
+#if ($isListEndpoint)
+	<td width="50%">
+	<h3>selection query</h3>
+	<hr>
+	<p>
+	This is the SPARQL query that was issued to select the items
+	of interest for this page.
+	</p>
+	<hr>
+	<textarea class="provenance" name="query" width="45%">
+	$meta['selectionResult.query.value']
+	</textarea>
+	</td>
+#end
+
+<td width="50%">
+<h3>view query</h3>
+<hr>
+<p>
+This is the SPARQL query that was issued for the property
+chains of the view for this page.
+</p>
+<hr>
+<textarea class="provenance" name="query" width="45%">
+$meta['viewingResult.query.value']
+</textarea>
+</td>
+
+</tr>
+</table>
+
+
+#parse("page-foot-shell.vm")
+
+</body>
+</html>

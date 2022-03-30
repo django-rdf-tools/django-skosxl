@@ -1,0 +1,84 @@
+@base <http://www.w3.org/2004/02/skos/core>.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix dct: <http://purl.org/dc/terms/>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+
+@prefix sp: <http://spinrdf.org/sp#> .
+@prefix spin: <http://spinrdf.org/spin#> .
+@prefix spl: <http://spinrdf.org/spl#> .
+
+
+@prefix lid: <http://id.sirf.net/def/schema/lid/> .
+
+@prefix void: <http://rdfs.org/ns/void#> .
+
+void:Dataset 
+	spin:rule [ 
+	     a sp:Construct ;
+	     rdfs:label "LID view"@en;
+	     rdfs:comment "Creates list of available views based on VoiD "@en ;
+	     sp:text """
+		    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		    PREFIX lid: <http://id.sirf.net/def/schema/lid/>
+			PREFIX void:<http://rdfs.org/ns/void#>
+			PREFIX owl:<http://www.w3.org/2002/07/owl#>
+			CONSTRUCT  { 
+			    ?s void:feature ?if
+			}
+			WHERE {
+			        ?s a void:Dataset .
+			        ?s rdf:type ?t . 
+			        ?t rdfs:subClassOf ?bn .   
+			        ?bn owl:someValuesFrom ?if .
+			        ?bn owl:onProperty void:feature .
+			    }
+
+
+			""" ;
+	    ]  ;
+	 spin:rule [ 
+	     a sp:Construct ;
+	     rdfs:label "Feature formats"@en;
+	     rdfs:comment "Creates list of available views based on VoiD "@en ;
+	     sp:text """
+		    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		    PREFIX lid: <http://id.sirf.net/def/schema/lid/>
+			PREFIX void:<http://rdfs.org/ns/void#>
+			PREFIX owl:<http://www.w3.org/2002/07/owl#>
+			PREFIX dcterms:<http://purl.org/dc/terms/>
+			CONSTRUCT  { ?f dcterms:hasFormat ?fmt}
+			 WHERE {
+			 ?s a void:Dataset .
+			 ?s void:feature ?f . 
+			 ?f a ?ftype .
+			 ?ftype dcterms:hasFormat ?fmt .
+			 ?fmt lid:ldatoken ?ftok
+			} 
+
+
+			""" ;
+	    ]  ;
+.
+
+lid:lidset
+	spin:rule [ 
+	     a sp:Construct ;
+	     rdfs:label "Injects alternates"@en;
+	     rdfs:comment "Creates a link to list of available views based on VoiD"@en ;
+	     sp:text """
+		    PREFIX lid: <http://id.sirf.net/def/schema/lid/>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			CONSTRUCT  { ?s rdfs:seeAlso ?link}
+			 WHERE {
+			 ?s a lid:lidset BIND ( IRI(CONCAT( str(?s), "?_view=alternates" ))AS ?link ).
+			 
+			} 
+			""" ;
+	    ]  ;
+.
+

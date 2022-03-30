@@ -1,17 +1,23 @@
 {% extends "admin/change_list.html" %}
 {% block content %}
 
+{% if scheme_id %}
 <div id="chart" class="gallery">
 </div>
 
-<script type="text/javascript">
-    json_data = "/skosxl/admin_scheme_tree/{{scheme_id}}/"
-</script>
-<script type="text/javascript" src="/static/d3.js"></script>
-<script type="text/javascript" src="/static/d3.layout.js"></script>
-<script type="text/javascript" src="/static/d3.tree.js"></script>
-<link rel="stylesheet" type="text/css" href="/static/d3.tree.css" />
 
+<script type="text/javascript">
+    json_data = "/skosxl/admin_scheme_tree/{{ scheme_id }}/"
+</script>
+<script type="text/javascript" src="/static/d3.v3.min.js"></script>
+<script type="text/javascript" src="/static/d3.layout.js"></script>
+<!-- <script type="text/javascript" src="/static/d3.tree.js"></script> -->
+<link rel="stylesheet" type="text/css" href="/static/d3.tree.css" />
+<script type="text/javascript" src="/static/expandable_tree.js"></script>
+<script type="text/javascript">
+  
+</script>
+{% endif %}
 {{ block.super }}
 
 {% endblock %}

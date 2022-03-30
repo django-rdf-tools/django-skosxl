@@ -4,18 +4,49 @@
 
 {% block document %}
 
+
+{% load i18n %}
 <div id="title" class="grid_12 grid">
 {% block title %}<h3>Concept : {{object}}</h3>{% endblock %}
-    <p>Ajouté le {{object.created|date:'l t F Y'}} par {{object.user}}</p>
+    <p><a href="{{ uri }}">{{uri}}</a></p>
+	<p>In scheme <a href="{{ object.scheme.uri }}">{{ object.scheme.uri }}</a></p>
+		<p><a href="{{ object.scheme.get_absolute_url }}">{{ object.scheme.get_absolute_url }}</a></p>
     <br/>
 </div>
 
 {% block content %}
 <div id="content">
     <div class="grid_4 grid">
-        
-        
+    
 
+        <h4>PrefLabels</h4>
+        <ul>
+        {% for l in preflabels %}
+        <li>{{ l }}{% if l.language %}@{{l.language}}{% endif %}</li>
+        {%endfor%} 
+        </ul>
+        <br/>
+		
+		{% if altlabels %}
+        <h4>AltLabels</h4>
+        <ul>
+        {% for l in altlabels %}
+          <li>{{ l }}{% if l.language %}@{{l.language}}{% endif %}</li>
+        {%endfor%} 
+        </ul>
+        <br/> 
+        {% endif %}
+		
+	{% if notations %}
+        <h4>Notations</h4>
+        <ul>
+        {% for l in notations %}
+        <li>{{ l }}</li>
+        {%endfor%} 
+        </ul>
+        <br/>
+    {% endif %}
+	
     </div>
     
 

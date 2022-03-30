@@ -71,7 +71,7 @@ from django.utils.translation import ugettext as _
 from django.utils.text import get_text_list
 # added by mikele
 # from django.conf.urls.defaults import *
-from django.conf.urls import patterns
+from django.conf.urls import url
 from django.contrib.admin.sites import site
 
 
@@ -101,7 +101,7 @@ class FkSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site = site):
         self.search_fields = search_fields
@@ -180,7 +180,7 @@ class NoLookupsForeignKeySearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
@@ -257,7 +257,7 @@ class InlineSearchInput(ForeignKeyRawIdWidget):
     def label_for_value(self, value):
         key = self.rel.get_related_field().name
         obj = self.rel.to._default_manager.get(**{key: value})
-        return Truncate(obj).words(14)
+        return Truncator(obj).words(14)
 
     def __init__(self, rel, search_fields, attrs=None, admin_site=site):
         self.search_fields = search_fields
@@ -358,9 +358,9 @@ class FkAutocompleteAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         urls = super(FkAutocompleteAdmin,self).get_urls()
-        search_url = patterns('',
-            (r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
-        )
+        search_url = [
+            url(r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
+        ]
         return search_url + urls
 
     def foreignkey_autocomplete(self, request):
@@ -472,9 +472,9 @@ class NoLookupsForeignKeyAutocompleteAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         urls = super(NoLookupsForeignKeyAutocompleteAdmin,self).get_urls()
-        search_url = patterns('',
-            (r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
-        )
+        search_url = [
+            url(r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
+        ]
         return search_url + urls
 
     def foreignkey_autocomplete(self, request):
@@ -592,9 +592,9 @@ class InlineAutocompleteAdmin(admin.TabularInline):
 
     def get_urls(self):
         urls = super(InlineAutocompleteAdmin,self).get_urls()
-        search_url = patterns('',
-            (r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
-        )
+        search_url = [
+            url(r'^foreignkey_autocomplete/$', self.admin_site.admin_view(self.foreignkey_autocomplete))
+        ]
         return search_url + urls
 
     def foreignkey_autocomplete(self, request):

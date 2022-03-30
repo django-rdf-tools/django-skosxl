@@ -1,0 +1,322 @@
+[ {
+		"pk" : null,
+		"model" : "uriredirect.uriregister",
+		"fields" : {
+			"url" : "http://resources.opengeospatial.org/def/voc",
+			"can_be_resolved" : true,
+			"label" : "voc"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "SISSVOC API binding, assumes a sissvoc instance at the URI register root {root} where the URIs of terms  are based on two extra levels of register/container : {root}{domain}{scheme}{term}\r\n\r\n{domain} is a governance domain - eg \"examples\"\r\n\r\nAs an API this will have several child rules (i.e. whose parent is this rule) that define no service_location or uri_register - but define a view or other query param set.",
+			"parent" : ["SISSVoc API for Concepts"]ull,
+			"pattern" : "(?P<domain>[^\\/]+)/(?P<scheme>[^\\/]+)/(?P<term>[^\\?]+)",
+			"register" : null,
+			"view_pattern" : "",
+			"label" : "SISSVoc API for Concepts",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	},  {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "SISSVOC API binding for conceptSchemes, assumes a SISSVOC instance at the URI register root {root} where the URIs of terms  are based on two extra levels of register/container : {root}/{domain}/{scheme}\r\n\r\nAs an API this will have several child rules (i.e. whose parent is this rule) that define no service_location or uri_register - but define a view or other query param set.",
+			"parent" : ["SISSVoc API for Concepts"]ull,
+			"pattern" : "^(?P<domain>[^\\/]+)/(?P<scheme>[^\\/]+)$",
+			"register" : null,
+			"view_pattern" : "",
+			"label" : "SISSVoc API for ConceptSchemes",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	},{
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "http://resources.opengeospatial.org:8080/dna",
+			"use_lda" : true,
+			"description" : "Local SISSVoc service endpoint binding",
+			"parent" : ["SISSVoc API for ConceptSchemes"],
+			"pattern" : "",
+			"register" : "voc",
+			"view_pattern" : "",
+			"label" : "local SISSVoc service binding : SchemeAPI",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "A sub rule view invoked when _view=skos:allbroader is set (gets skos broaderTransitive properties)",
+			"parent" : ["SISSVoc API for Concepts"],
+			"pattern" : "",
+			"register" : null,
+			"view_pattern" : "skos:allbroader",
+			"label" : "SISSVoc skos:allbroader",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "A sub rule view invoked when _view=skos:narrower is set",
+			"parent" : ["SISSVoc API for Concepts"],
+			"pattern" : "",
+			"register" : null,
+			"view_pattern" : "skos:narrower",
+			"label" : "SISSVoc skos:narrower",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "_view=alternates - support for listing available views",
+			"parent" : ["SISSVoc API for ConceptSchemes"],
+			"pattern" : "",
+			"register" : null,
+			"view_pattern" : "alternates",
+			"label" : "LID alternates for ConceptSchemes",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "http://resources.opengeospatial.org:8080/dna",
+			"use_lda" : true,
+			"description" : "Local SISSVoc service endpoint binding",
+			"parent" : ["SISSVoc API for Concepts"],
+			"pattern" : "",
+			"register" : "voc",
+			"view_pattern" : "",
+			"label" : "local SISSVoc service binding : ConceptsAPI",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.rewriterule",
+		"fields" : {
+			"service_location" : "",
+			"use_lda" : true,
+			"description" : "A sub rule view invoked when _view=skos:broader is set",
+			"parent" : ["SISSVoc API for Concepts"],
+			"pattern" : "",
+			"register" : null,
+			"view_pattern" : "skos:broader",
+			"label" : "SISSVoc skos:broader",
+			"view_param" : "_view",
+			"service_params" : ""
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "SISSVoc API for Concepts",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "SISSVoc skos:allbroader",
+			"redirect_to" : "${server}/skos/concept/broaderTransitive?_view=basic&uri=${register}/${path}&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "SISSVoc skos:allbroader",
+			"redirect_to" : "${server}/skos/concept/broaderTransitive?_view=basic&uri=${register}/${path}&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "SISSVoc skos:narrower",
+			"redirect_to" : "${server}/skos/concept/narrower?uri=${register}/${path}&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "SISSVoc skos:narrower",
+			"redirect_to" : "${server}/skos/concept/narrower?uri=${register}/${path}&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "SISSVoc skos:narrower",
+			"redirect_to" : "${server}/skos/concept/narrower?uri=${register}/${path}&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "SISSVoc skos:narrower",
+			"redirect_to" : "${server}/skos/concept/narrower?uri=${register}/${path}&_format=rdf"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "SISSVoc skos:allbroader",
+			"redirect_to" : "${server}/skos/concept/broaderTransitive?_view=basic&uri=${register}/${path}&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "SISSVoc skos:allbroader",
+			"redirect_to" : "${server}/skos/concept/broaderTransitive?_view=basic&uri=${register}/${path}&_format=rdf"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "LID alternates for ConceptSchemes",
+			"redirect_to" : "${server}/lid/resourcelist?baseuri=${register}/${path}&item=&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "LID alternates for ConceptSchemes",
+			"redirect_to" : "${server}/lid/resourcelist?baseuri=${register}/${path}&item=&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "LID alternates for ConceptSchemes",
+			"redirect_to" : "${server}/lid/resourcelist?baseuri=${register}/${path}&item=&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "LID alternates for ConceptSchemes",
+			"redirect_to" : "${server}/lid/resourcelist?baseuri=${register}/${path}&item=&_format=rdf"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "SISSVoc API for Concepts",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=rdf"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "SISSVoc API for Concepts",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "SISSVoc API for Concepts",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "SISSVoc API for ConceptSchemes",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "SISSVoc API for ConceptSchemes",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=rdf"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "SISSVoc API for ConceptSchemes",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "SISSVoc API for ConceptSchemes",
+			"redirect_to" : "${server}/skos/resource?uri=${register}/${path}&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/html",
+			"rewrite_rule" : "SISSVoc skos:broader",
+			"redirect_to" : "${server}/skos/concept/broader?_view=basic&uri=${register}/${path}&_format=html"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "text/turtle",
+			"rewrite_rule" : "SISSVoc skos:broader",
+			"redirect_to" : "${server}/skos/concept/broader?_view=basic&uri=${register}/${path}&_format=ttl"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/json",
+			"rewrite_rule" : "SISSVoc skos:broader",
+			"redirect_to" : "${server}/skos/concept/broader?_view=basic&uri=${register}/${path}&_format=json"
+		}
+	}, {
+		"pk" : null,
+		"model" : "uriredirect.acceptmapping",
+		"fields" : {
+			"media_type" : "application/rdf+xml",
+			"rewrite_rule" : "SISSVoc skos:broader",
+			"redirect_to" : "${server}/skos/concept/broader?_view=basic&uri=${register}/${path}&_format=rdf"
+		}
+	}
+]

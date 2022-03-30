@@ -1,0 +1,121 @@
+@base <http://www.w3.org/2004/02/skos/core>.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix dcterms: <http://purl.org/dc/terms/>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+
+@prefix sp: <http://spinrdf.org/sp#> .
+@prefix spin: <http://spinrdf.org/spin#> .
+@prefix spl: <http://spinrdf.org/spl#> .
+
+
+@prefix lid: <http://id.sirf.net/def/schema/lid/> .
+
+@prefix void: <http://rdfs.org/ns/void#> .
+
+@prefix api: <http://resources.opengeospatial.org/def/api/> .
+
+# import lid_metamodel, void, cube...
+
+# class models and spin rules for binding SKOS objects to technical features via the VoiD model.
+
+# inject alternates view into every Concept - will be automatic for the containing set via the lidset rules - but individual items are not handled
+
+skos:Concept a rdfs:Class;
+	spin:rule [ 
+	     a sp:Construct ;
+	     rdfs:label "Injects alternates"@en;
+	     rdfs:comment "Creates a link to list of available views based on VoiD"@en ;
+	     sp:text """
+		    PREFIX lid: <http://id.sirf.net/def/schema/lid/>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			CONSTRUCT  { ?s rdfs:seeAlso ?link}
+			 WHERE { 
+			 ?s a skos:Concept BIND ( IRI(CONCAT( str(?s), "?_view=alternates" )) AS ?link ).
+			 
+			} 
+			""" ;
+	    ]  ;
+.
+
+skos:Collection a rdfs:Class;
+	spin:rule [ 
+	     a sp:Construct ;
+	     rdfs:label "Injects alternates"@en;
+	     rdfs:comment "Creates a link to list of available views based on VoiD"@en ;
+	     sp:text """
+		    PREFIX lid: <http://id.sirf.net/def/schema/lid/>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			CONSTRUCT  { ?s rdfs:seeAlso ?link}
+			 WHERE {
+			 ?s a skos:Collection BIND ( IRI(CONCAT( str(?s), "?_view=alternates" )) AS ?link ).
+			 
+			} 
+			""" ;
+	    ]  ;
+.
+
+skos:ConceptScheme 
+    # as a lidset it inherits the alternates view API
+	rdfs:subClassOf lid:lidset ;
+
+     rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom api:skosbroader ;
+     ]  ;
+     rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom api:skosnarrower ;
+     ]  ;
+     rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom api:skosallbroader ;
+     ]  ;
+     rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty void:feature ;
+        owl:someValuesFrom api:skostopconcept ;
+     ]  ;
+    .
+
+api:skosbroader a   lid:LDAViewer ;
+    rdfs:label "SKOS Broader View";
+    rdfs:comment "SISSVoc vocab allowing broader terms to be accessed";
+    lid:viewName "skos:broader" ;
+    lid:featurescope "item" 
+   .
+
+
+api:skosnarrower a   lid:LDAViewer ;
+    rdfs:label "SKOS Narrower View";
+    rdfs:comment "SISSVoc vocab API allowing broader terms to be accessed";
+    lid:viewName "skos:narrower" ;
+    lid:featurescope "item" 
+   .
+
+
+api:skosallbroader a   lid:LDAViewer ;
+    rdfs:label "SKOS All Broader View";
+    rdfs:comment "Extended SISSVoc vocab allowing broader transitive terms to be accessed";
+    lid:viewName "skos:allbroader" ;
+    lid:featurescope "item" 
+   .
+
+api:skostopconcept a   lid:LDAViewer ;
+    rdfs:label "SKOS top concept";
+    rdfs:comment "Extended SISSVoc vocab allowing top concepts to be browsed";
+    lid:viewName "skos:topconcepts" ;
+    lid:featurescope "set" 
+   .
+
+
+ 

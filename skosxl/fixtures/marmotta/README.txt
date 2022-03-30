@@ -1,0 +1,2 @@
+MARMOTTA specific files (typically LDP containers and KWRL reasoning) to load into the target RDF store to support logic. 
+TODO - explore modular per-module ansible scripts that can be run by importing projects.

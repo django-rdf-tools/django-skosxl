@@ -1,0 +1,33 @@
+/* This is the last CSS loaded - you can destroy incoming formatting! */
+
+/* use the SISSvoc banner */
+
+nav.site {
+	background: url("../images/sissvoc-banner.png") no-repeat 0% 0%;
+	padding-top: 54px;
+}
+
+/* we are replacing the icon near the title. */ 
+header h1 {
+    background: url("../images/siss-icon-64.png") no-repeat scroll 0 0 transparent;
+}
+
+
+/* Hack to fix the nesting of tables.... - its even worse now.... */
+table {
+    table-layout: fixed;
+}
+
+#page {
+    width: 1040px;
+}
+
+#result {
+    width:620px;
+}
+
+.panel section {
+    width: 575px;
+}
+
+/* END Hack to fix the nesting of tables.... - its even worse now.... */

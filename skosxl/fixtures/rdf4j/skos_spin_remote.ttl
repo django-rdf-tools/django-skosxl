@@ -1,0 +1,126 @@
+@base <http://www.w3.org/2004/02/skos/core>.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix dct: <http://purl.org/dc/terms/>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+
+@prefix sp: <http://spinrdf.org/sp#> .
+@prefix spin: <http://spinrdf.org/spin#> .
+@prefix spl: <http://spinrdf.org/spl#> .
+
+# spin rules for SKOS closures
+skos:Concept a owl:Class;
+	# spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles
+	spin:rule [ 
+	     a sp:Modify ;
+	     rdfs:label "makes narrower as inverse of broader"@en;
+	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
+	     sp:text """
+		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			 PREFIX service: <http://localhost/services/>
+		     INSERT  {	
+ 				GRAPH ?this {		     
+		    		?B skos:narrower ?this .
+					?this skos:broaderTransitive ?B .
+					}
+			 }
+			 WHERE {
+				?mainrepo a service:Repo  .
+				OPTIONAL { ?this skos:broader ?B . }
+				OPTIONAL { SERVICE ?mainrepo
+						{
+							?this skos:broader ?B .
+						}
+					}
+				}
+			""" ;
+	    ]  ;
+
+	spin:rule [ 
+	     a sp:Modify ;
+	     rdfs:label "makes broader as inverse of narrower"@en;
+	     rdfs:comment "spin rule to trigger RDFS entailment - Profiles are an RDFS class, datasets maybe described as instances of such profiles"@en ;
+	     sp:text """
+		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			 PREFIX service: <http://localhost/services/>
+		     INSERT  {	
+ 				GRAPH ?this {		    
+			    	?B skos:broader ?this .
+					?B skos:broaderTransitive ?this .
+					}
+			 }
+			 WHERE {
+				?mainrepo a service:Repo  .
+				OPTIONAL { ?this skos:narrower ?B . }
+				OPTIONAL { SERVICE ?mainrepo
+						{
+							?this skos:narrower ?B .
+						}
+					}
+				}
+			""" ;
+	    ]  ;
+
+
+		spin:rule [ 
+	     a sp:Modify ;
+	     rdfs:label "hasTopConcept"@en;
+	     rdfs:comment "spin rule to list topconcepts"@en ;
+	     sp:text """
+		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			 PREFIX service: <http://localhost/services/>
+		 	INSERT {
+		 	    GRAPH ?this {
+		    	?this skos:topConceptOf ?S  .
+				?S skos:hasTopConcept ?this .
+				} }
+			WHERE {
+				?mainrepo a service:Repo  .
+				OPTIONAL { ?S skos:hasTopConcept ?this . }
+				OPTIONAL { ?this skos:topConceptOf ?S  . }
+				OPTIONAL {
+					SERVICE ?mainrepo
+					{
+						OPTIONAL { ?S skos:hasTopConcept ?this . }
+						OPTIONAL { ?this skos:topConceptOf ?S  . }
+					}
+				}
+			}
+			""" ;
+
+	    ]  ;
+.
+
+skos:ConceptScheme  spin:rule [ 
+	     a sp:Modify ;
+	     rdfs:label "hasTopConcept"@en;
+	     rdfs:comment "spin rule to entail skos:hasTopConcept"@en ;
+	     sp:text """
+		     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			 PREFIX service: <http://localhost/services/>
+		     INSERT {
+		        GRAPH ?this {
+		    		?this skos:hasTopConcept ?A  .\
+		    		}
+				}
+			WHERE {
+				?mainrepo a service:Repo  .
+				SERVICE ?mainrepo
+				{
+					?A a skos:Concept .
+					?A skos:topConceptOf ?this .
+				}
+			}
+			""" ;
+	    ]  ;
+	    
+.
+
